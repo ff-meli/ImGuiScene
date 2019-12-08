@@ -1,0 +1,3 @@
+[submodule "deps/SDL2-CS"]
+	path = deps/SDL2-CS
+	url = git@github.com:flibitijibibo/SDL2-CS
