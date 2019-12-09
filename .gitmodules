@@ -1,6 +1,6 @@
 [submodule "deps/SDL2-CS"]
 	path = deps/SDL2-CS
-	url = git@github.com:flibitijibibo/SDL2-CS.git
+	url = https://github.com/flibitijibibo/SDL2-CS
 [submodule "deps/ImGui.NET"]
 	path = deps/ImGui.NET
-	url = git@github.com:ff-meli/ImGui.NET.git
+	url = https://github.com/ff-meli/ImGui.NET
