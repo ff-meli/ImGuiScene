@@ -6,7 +6,7 @@ ImGui integration is done with [ImGui.NET](https://github.com/mellinoe/ImGui.NET
 A simple sample application will follow soon.
 
 
-### Using in a project
+### Using in a project (THIS IS OUT OF DATE AS I CHANGE THINGS)
 There are a couple ways to do this right now, but neither is great.  I may turn this into a NuGet package just to save some headache.  For now:
 * Manual inclusion
   * Build this project
