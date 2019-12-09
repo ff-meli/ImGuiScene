@@ -107,12 +107,4 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent>SET sourceDir=$(SolutionDir)packages
-SET destDir=$(SolutionDir)deps\ImGui.NET\src\packages
-
-if not exist %25sourceDir%25 mkdir %25sourceDir%25
-
-if not exist %25destDir%25 mklink /j %25destDir%25 %25sourceDir%25</PreBuildEvent>
-  </PropertyGroup>
 </Project>
