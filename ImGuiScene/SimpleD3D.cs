@@ -49,7 +49,7 @@ namespace ImGuiScene
                 IsWindowed = true
             };
 
-            Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.Debug, desc, out _device, out _swapChain);
+            Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.None, desc, out _device, out _swapChain);
 
             // disable alt-enter fullscreen toggle, and ignore prtscn in case it does anything
             using (var factory = _swapChain.GetParent<Factory>())
