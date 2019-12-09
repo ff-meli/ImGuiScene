@@ -8,6 +8,9 @@ using Device = SharpDX.Direct3D11.Device;
 
 namespace ImGuiScene
 {
+    /// <summary>
+    /// A simple wrapper for a minimal DirectX 11 renderer.  Consumers of this class will need to implement all actual pipeline and render logic externally.
+    /// </summary>
     public class SimpleD3D : IDisposable
     {
         private Device _device;
@@ -18,14 +21,24 @@ namespace ImGuiScene
             private set { _device = value; }
         }
 
+        /// <summary>
+        /// The device's immediateContext
+        /// </summary>
         public DeviceContext Context { get; private set; }
 
+        /// <summary>
+        /// The renderer clear color used by <see cref="Clear"/>
+        /// </summary>
         public RawColor4 ClearColor { get; set; }
 
         // no reason to expose these at the moment
         private SwapChain _swapChain;
         private RenderTargetView _backBufferView;
 
+        /// <summary>
+        /// Initialized DirectX 11 for the specified window
+        /// </summary>
+        /// <param name="hWnd">The windows HWND of the target window to render into</param>
         public SimpleD3D(IntPtr hWnd)
         {
             var desc = new SwapChainDescription
@@ -68,11 +81,17 @@ namespace ImGuiScene
             Context.OutputMerger.SetTargets(_backBufferView);
         }
 
+        /// <summary>
+        /// Clears the render target
+        /// </summary>
         public void Clear()
         {
             Context.ClearRenderTargetView(_backBufferView, ClearColor);
         }
 
+        /// <summary>
+        /// Swap render buffers to the screen.  This is currently hardcoded to occur on vsync.
+        /// </summary>
         public void Present()
         {
             _swapChain.Present(1, PresentFlags.None);

@@ -16,6 +16,10 @@ using MapFlags = SharpDX.Direct3D11.MapFlags;
 
 namespace ImGuiScene
 {
+    /// <summary>
+    /// Currently undocumented because it is a horrible mess.
+    /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_dx11.cpp
+    /// </summary>
     public class ImGui_Impl_DX11
     {
         private static Device _device = null;

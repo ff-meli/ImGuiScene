@@ -10,7 +10,7 @@ namespace ImGuiSceneTest
         {
             using (var scene = new SimpleImGuiScene("ImGui Test", fullscreen: true))
             {
-                scene.Window.MakeWindowTransparent(SimpleSDLWindow.CreateColorKey(0, 0, 0));
+                scene.Window.MakeTransparent(SimpleSDLWindow.CreateColorKey(0, 0, 0));
 
                 scene.Window.OnSDLEvent += (ref SDL_Event sdlEvent) =>
                 {

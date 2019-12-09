@@ -6,6 +6,10 @@ using static SDL2.SDL;
 
 namespace ImGuiScene
 {
+    /// <summary>
+    /// Currently undocumented because it is a horrible mess.
+    /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_sdl.cpp
+    /// </summary>
     public class ImGui_Impl_SDL
     {
         private static IntPtr _sdlWindow;
