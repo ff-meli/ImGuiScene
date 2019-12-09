@@ -12,14 +12,13 @@ There are a couple ways to do this right now, but neither is great.  I may turn 
   * Build this project
   * Add a reference in your project to ImGuiScene.dll in this project's output folder
   * Add a reference in your project to SDL2-CS.dll in this project's output folder (the NuGet package is out of date and not maintained, so do not use that)
+  * Add a reference in your project to ImGui.NET.dll in this project's output folder (the NuGet version _might_ work for you, but there are dependency problems in some projects, which is why the local version exists)
   * Manually copy SDL2.dll from this project's output folder, ensure it is placed in your project's output folder(s) when built
-  * Ensure your project has a NuGet package reference to ImGui.NET
 * Project inclusion
   * Create your project
   * Add this project's _solution_ (not just the project!) to your project
   * Set the ImGuiScene project to have a build dependency on SDL2-CS project
-  * Add a project reference in your project to the ImGuiScene project and the SDL2-CS project
-  * Add a NuGet reference in your project to ImGui.NET
+  * Add a project reference in your project to the ImGuiScene project, the ImGui.NET project and the SDL2-CS project
   * You may need to symlink package directories to make NuGet behave properly, see [here](https://stackoverflow.com/a/43923071)
 
 #### Note
@@ -29,19 +28,17 @@ You may need to ensure "Prefer 32-bit" is disabled for your project if you use t
 ### Simple example application
 This is a simple example that creates a transparent ('hidden') fullscreen window that just renders the default ImGui demo window
 ```csharp
-private static bool _quit = false;
-
 static void Main(string[] args)
 {
     using (var scene = new SimpleImGuiScene("ImGui Test", fullscreen: true))
     {
-        scene.Window.MakeWindowTransparent(SimpleSDLWindow.CreateColorKey(0, 0, 0));
+        scene.Window.MakeTransparent(SimpleSDLWindow.CreateColorKey(0, 0, 0));
 
         scene.Window.OnSDLEvent += (ref SDL_Event sdlEvent) =>
         {
             if (sdlEvent.type == SDL_EventType.SDL_KEYDOWN && sdlEvent.key.keysym.scancode == SDL_Scancode.SDL_SCANCODE_ESCAPE)
             {
-                _quit = true;
+                scene.ShouldQuit = true;
             }
             return true;
         };
@@ -51,10 +48,7 @@ static void Main(string[] args)
             ImGui.ShowDemoWindow();
         };
 
-        while (!_quit)
-        {
-            scene.Update(out _quit);
-        }
+        scene.Run();
     }
 }
 ```
