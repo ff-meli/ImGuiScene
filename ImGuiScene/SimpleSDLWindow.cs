@@ -24,6 +24,7 @@ namespace ImGuiScene
 
         public IntPtr Window { get; private set; }
         public ProcessEventDelegate OnSDLEvent { get; set; }
+        public bool WantsClose { get; set; } = false;
 
         public SimpleSDLWindow(string title, int xPos, int yPos, int width, int height, bool fullscreen)
         {
@@ -75,23 +76,21 @@ namespace ImGuiScene
             SetLayeredWindowAttributes(hWnd, transparentColorKey, 0, LWA_COLORKEY);
         }
 
-        public void ProcessEvents(out bool quit)
+        public void ProcessEvents()
         {
-            quit = false;
-
             while (SDL_PollEvent(out SDL_Event sdlEvent) != 0)
             {
                 OnSDLEvent?.Invoke(ref sdlEvent);
 
                 if (sdlEvent.type == SDL_EventType.SDL_QUIT)
                 {
-                    quit = true;
+                    WantsClose = true;
                 }
                 else if (sdlEvent.type == SDL_EventType.SDL_WINDOWEVENT &&
                          sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE &&
                          sdlEvent.window.windowID == SDL_GetWindowID(Window))
                 {
-                    quit = true;
+                    WantsClose = true;
                 }
             }
         }

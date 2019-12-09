@@ -8,6 +8,8 @@ namespace ImGuiScene
         public SimpleSDLWindow Window { get; private set; }
         public SimpleD3D D3D { get; private set; }
 
+        public bool ShouldQuit { get; set; } = false;
+
         public delegate void BuildUIDelegate();
 
         public BuildUIDelegate OnBuildUI;
@@ -25,10 +27,9 @@ namespace ImGuiScene
             Window.OnSDLEvent += ImGui_Impl_SDL.ProcessEvent;
         }
 
-        public void Update(out bool quit)
+        public void Update()
         {
-            quit = false;
-            Window.ProcessEvents(out quit);
+            Window.ProcessEvents();
 
             ImGui_Impl_DX11.NewFrame();
             ImGui_Impl_SDL.NewFrame();
@@ -42,6 +43,16 @@ namespace ImGuiScene
             ImGui_Impl_DX11.RenderDrawData(ImGui.GetDrawData());
 
             D3D.Present();
+        }
+
+        public void Run()
+        {
+            // For now we consider the window closing to be a quit request
+            // while ShouldQuit is used for external/application close requests
+            while (!Window.WantsClose && !ShouldQuit)
+            {
+                Update();
+            }
         }
 
         #region IDisposable Support
