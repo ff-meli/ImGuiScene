@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImGuiScene", "ImGuiScene\Im
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDL2-CS", "deps\SDL2-CS\SDL2-CS.csproj", "{85480198-8711-4355-830E-72FD794AD3F6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImGui.NET-472", "deps\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj", "{0483026E-C6CE-4B1A-AA68-46544C08140B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{85480198-8711-4355-830E-72FD794AD3F6}.Release|x64.Build.0 = Release|x64
 		{85480198-8711-4355-830E-72FD794AD3F6}.Release|x86.ActiveCfg = Release|x86
 		{85480198-8711-4355-830E-72FD794AD3F6}.Release|x86.Build.0 = Release|x86
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Debug|x64.Build.0 = Debug|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Debug|x86.Build.0 = Debug|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Release|x64.ActiveCfg = Release|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Release|x64.Build.0 = Release|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Release|x86.ActiveCfg = Release|Any CPU
+		{0483026E-C6CE-4B1A-AA68-46544C08140B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
