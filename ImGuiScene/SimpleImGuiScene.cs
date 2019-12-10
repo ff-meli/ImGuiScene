@@ -178,6 +178,11 @@ namespace ImGuiScene
                 _allocatedResources.ForEach(res => res.Dispose());
                 _allocatedResources.Clear();
 
+                // Probably not necessary, but may as well be nice and try to clean up in case we used anything
+                // This is safe even if nothing from the library was used
+                // We also never call IMG_Load() for now since it is done automatically where needed
+                IMG_Quit();
+
                 D3D?.Dispose();
                 D3D = null;
 
