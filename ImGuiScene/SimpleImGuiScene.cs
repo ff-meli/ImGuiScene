@@ -1,5 +1,8 @@
 ﻿using ImGuiNET;
 using System;
+using System.Collections.Generic;
+using static SDL2.SDL;
+using static SDL2.SDL_image;
 
 namespace ImGuiScene
 {
@@ -26,6 +29,8 @@ namespace ImGuiScene
         /// </summary>
         public BuildUIDelegate OnBuildUI;
 
+        private List<IDisposable> _allocatedResources = new List<IDisposable>();
+
         /// <summary>
         /// Constructs a new window, initializes DX11 inside it and bootstraps ImGui.
         /// </summary>
@@ -36,7 +41,7 @@ namespace ImGuiScene
         /// <param name="width">Width of the window.  Unused for fullscreen.</param>
         /// <param name="height">Height of the window.  Unused for fullscreen.</param>
         /// <param name="fullscreen">Whether the window should be fullscreen.  Fullscreen windows are borderless windowed with "Always on top" behavior.</param>
-        public SimpleImGuiScene(string title, int xPos = SDL2.SDL.SDL_WINDOWPOS_UNDEFINED, int yPos = SDL2.SDL.SDL_WINDOWPOS_UNDEFINED, int width = 0, int height = 0, bool fullscreen = false)
+        public SimpleImGuiScene(string title, int xPos = SDL_WINDOWPOS_UNDEFINED, int yPos = SDL_WINDOWPOS_UNDEFINED, int width = 0, int height = 0, bool fullscreen = false)
         {
             Window = new SimpleSDLWindow(title, xPos, yPos, width, height, fullscreen);
             D3D = new SimpleD3D(Window.GetHWnd());
@@ -47,6 +52,72 @@ namespace ImGuiScene
             ImGui_Impl_DX11.Init(D3D.Device, D3D.Context, false);
 
             Window.OnSDLEvent += ImGui_Impl_SDL.ProcessEvent;
+        }
+
+        /// <summary>
+        /// Loads an image from a file and creates the corresponding DX texture
+        /// </summary>
+        /// <param name="path">The filepath to the image</param>
+        /// <returns>The NativePointer associated with the loaded DX ShaderResourceView, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <remarks>Currently any textures created by this method are managed automatically and exist until this class object is Disposed.</remarks>
+        public IntPtr LoadImage(string path)
+        {
+            var surface = IMG_Load(path);
+            if (surface != null)
+            {
+                return LoadImage_Internal(surface);
+            }
+
+            return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Loads an image from a byte array of image data and creates the corresponding DX texture
+        /// </summary>
+        /// <param name="imageBytes">The raw image data</param>
+        /// <returns>The NativePointer associated with the loaded DX ShaderResourceView, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <remarks>Currently any textures created by this method are managed automatically and exist until this class object is Disposed.</remarks>
+        public IntPtr LoadImage(byte[] imageBytes)
+        {
+            unsafe
+            {
+                fixed (byte* mem = imageBytes)
+                {
+                    var rw = SDL_RWFromConstMem((IntPtr)mem, imageBytes.Length);
+                    var surface = IMG_Load_RW(rw, 1);
+                    if (surface != null)
+                    {
+                        return LoadImage_Internal(surface);
+                    }
+                }
+            }
+
+            return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Internal helper to create a DX ShaderResourceView from an existing SDL_Surface*
+        /// </summary>
+        /// <param name="surface">The existing SDL_Surface* representing the image</param>
+        /// <returns>The NativePointer associated with the loaded DX ShaderResourceView, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        private IntPtr LoadImage_Internal(IntPtr surface)
+        {
+            IntPtr ret = IntPtr.Zero;
+
+            unsafe
+            {
+                SDL_Surface* surf = (SDL_Surface*)surface;
+                var bytesPerPixel = ((SDL_PixelFormat*)surf->format)->BytesPerPixel;
+
+                var texture = D3D.CreateTexture(&surf->pixels, surf->w, surf->h, bytesPerPixel);
+                if (texture != null)
+                {
+                    _allocatedResources.Add(texture);
+                    ret = texture.NativePointer;
+                }
+            }
+
+            return ret;
         }
 
         /// <summary>
@@ -103,6 +174,9 @@ namespace ImGuiScene
                 ImGui_Impl_SDL.Shutdown();
 
                 ImGui.DestroyContext();
+
+                _allocatedResources.ForEach(res => res.Dispose());
+                _allocatedResources.Clear();
 
                 D3D?.Dispose();
                 D3D = null;

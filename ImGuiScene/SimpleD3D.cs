@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
@@ -95,6 +96,46 @@ namespace ImGuiScene
         public void Present()
         {
             _swapChain.Present(1, PresentFlags.None);
+        }
+
+        /// <summary>
+        /// Helper method to create a shader resource view from raw image data.
+        /// </summary>
+        /// <param name="pixelData">A pointer to the raw pixel data</param>
+        /// <param name="width">The width of the image</param>
+        /// <param name="height">The height of the image</param>
+        /// <param name="bytesPerPixel">The bytes per pixel of the image, used for stride calculations</param>
+        /// <returns>The created ShaderResourceView for the image, null on failure.</returns>
+        /// <remarks>The ShaderResourceView created by this method is not managed, and it is up to calling code to invoke Dispose() when done</remarks>
+        public unsafe ShaderResourceView CreateTexture(void* pixelData, int width, int height, int bytesPerPixel)
+        {
+            ShaderResourceView resView = null;
+
+            var texDesc = new Texture2DDescription
+            {
+                Width = width,
+                Height = height,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = SharpDX.DXGI.Format.R8G8B8A8_UNorm,    // TODO - support other formats?
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Immutable,
+                BindFlags = BindFlags.ShaderResource,
+                CpuAccessFlags = CpuAccessFlags.None,
+                OptionFlags = ResourceOptionFlags.None
+            };
+
+            using (var texture = new Texture2D(_device, texDesc, new DataRectangle(new IntPtr(pixelData), width * bytesPerPixel)))
+            {
+                resView = new ShaderResourceView(_device, texture, new ShaderResourceViewDescription
+                {
+                    Format = texDesc.Format,
+                    Dimension = SharpDX.Direct3D.ShaderResourceViewDimension.Texture2D,
+                    Texture2D = { MipLevels = texDesc.MipLevels }
+                });
+            }
+
+            return resView;
         }
 
         #region IDisposable Support
