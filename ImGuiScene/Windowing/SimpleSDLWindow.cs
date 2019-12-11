@@ -43,42 +43,74 @@ namespace ImGuiScene
         public bool WantsClose { get; set; } = false;
 
         /// <summary>
-        /// Delegate for providing user event handler methods that want to respond to SDL_Events
+        /// Delegate for providing user event handler methods that want to respond to SDL_Events.
         /// </summary>
         public ProcessEventDelegate OnSDLEvent { get; set; }
 
         /// <summary>
-        /// Initializes SDL and constructs a new window.
+        /// Creates a new SDL_Window with the given renderer attached.
         /// </summary>
-        /// <remarks>Fullscreen windows are borderless windowed with "always on top" behavior.  Be sure to add a way to close the window as the X will not be visible.</remarks>
-        /// <param name="title">The window's title.  Note that this is hidden for fullscreen windows.</param>
-        /// <param name="xPos">X position of the window.  Largely irrelevant for fullscreen.</param>
-        /// <param name="yPos">Y position of the window.  Largely irrelevant for fullscreen.</param>
-        /// <param name="width">Width of the window.  Unused for fullscreen.</param>
-        /// <param name="height">Height of the window.  Unused for fullscreen.</param>
-        /// <param name="fullscreen">Whether the window should be fullscreen.  Fullscreen windows are borderless windowed with "Always on top" behavior.</param>
-        public SimpleSDLWindow(string title, int xPos, int yPos, int width, int height, bool fullscreen)
+        /// <param name="renderer">The renderer to attach to this window.</param>
+        /// <param name="createInfo">The creation parameters to use when building this window.</param>
+        internal SimpleSDLWindow(IRenderer renderer, WindowCreateInfo createInfo)
         {
             if (SDL_Init(SDL_INIT_VIDEO) != 0)
             {
                 throw new Exception("SDL_Init error: " + SDL_GetError());
             }
 
-            var windowFlags = SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
-            if (fullscreen)
+            InitForRenderer(renderer);
+
+            var windowFlags = WindowCreationFlags(createInfo);
+            if (createInfo.Fullscreen)
             {
-                windowFlags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS | SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
                 // without this, clicking off the window (eg, to another monitor) will minimize and cause positioning issues
                 SDL_SetHint("SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS", "0");
             }
 
-            Window = SDL_CreateWindow(title, xPos, yPos, width, height, windowFlags);
+            Window = SDL_CreateWindow(createInfo.Title, createInfo.XPos, createInfo.YPos, createInfo.Width, createInfo.Height, windowFlags);
             if (Window == IntPtr.Zero)
             {
                 SDL_Quit();
                 throw new Exception("Failed to create window: " + SDL_GetError());
             }
+
+            if (createInfo.TransparentColor != null)
+            {
+                var colorKey = CreateColorKey(createInfo.TransparentColor[0], createInfo.TransparentColor[1], createInfo.TransparentColor[2]);
+                MakeTransparent(colorKey);
+            }
+
+            renderer.AttachToWindow(this);
         }
+
+        protected virtual void InitForRenderer(IRenderer renderer)
+        {
+            // base has no extra work to do
+        }
+
+        /// <summary>
+        /// Return the set of window flags necessary to create a window matching what is requested in <paramref name="createInfo"/>
+        /// </summary>
+        /// <param name="createInfo">The requested creation parameters for the window.</param>
+        /// <returns>The full set of SDL_WindowFlags to use when creating this window.</returns>
+        protected virtual SDL_WindowFlags WindowCreationFlags(WindowCreateInfo createInfo)
+        {
+            var flags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_HIDDEN;
+            if (createInfo.Fullscreen)
+            {
+                flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS | SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
+            }
+
+            // Transparent windows are neat but almost certainly don't work as intended unless they are forced to remain on top of everything
+            if (createInfo.TransparentColor != null)
+            {
+                flags |= SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
+            }
+
+            return flags;
+        }
+
 
         /// <summary>
         /// Gets the HWND of this window for interop with Windows methods.
@@ -103,7 +135,7 @@ namespace ImGuiScene
         /// </summary>
         /// <seealso cref="CreateColorKey(float, float, float)"/>
         /// <param name="transparentColorKey"></param>
-        public void MakeTransparent(uint transparentColorKey)
+        protected void MakeTransparent(uint transparentColorKey)
         {
             // yes these could be enums
             const int GWL_EXSTYLE = -20;
@@ -139,6 +171,11 @@ namespace ImGuiScene
                     WantsClose = true;
                 }
             }
+        }
+
+        internal void Show()
+        {
+            SDL_ShowWindow(Window);
         }
 
         #region IDisposable Support

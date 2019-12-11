@@ -10,46 +10,49 @@ namespace ImGuiScene
     /// Simple class to wrap everything necessary to use ImGui inside a window.
     /// Currently this always creates a new window rather than take ownership of an existing one.
     /// 
-    /// Internally this uses SDL and DirectX 11.  Rendering is tied to vsync.
+    /// Internally this uses SDL and DirectX 11 or OpenGL 3.2.  Rendering is tied to vsync.
     /// </summary>
     public class SimpleImGuiScene : IDisposable
     {
+        /// <summary>
+        /// The main application container window where we do all our rendering and input processing.
+        /// </summary>
         public SimpleSDLWindow Window { get; private set; }
-        public SimpleD3D D3D { get; private set; }
 
         /// <summary>
-        /// Whether the user application has requested the system to terminate
+        /// The renderer backend being used to render into this window.
+        /// </summary>
+        public IRenderer Renderer { get; private set; }
+
+        /// <summary>
+        /// Whether the user application has requested the system to terminate.
         /// </summary>
         public bool ShouldQuit { get; set; } = false;
 
         public delegate void BuildUIDelegate();
 
         /// <summary>
-        /// User methods invoked every ImGui frame to construct custom UIs
+        /// User methods invoked every ImGui frame to construct custom UIs.
         /// </summary>
         public BuildUIDelegate OnBuildUI;
 
         private List<IDisposable> _allocatedResources = new List<IDisposable>();
 
         /// <summary>
-        /// Constructs a new window, initializes DX11 inside it and bootstraps ImGui.
+        /// Creates a new window and a new renderer of the specified type, and initializes ImGUI.
         /// </summary>
-        /// <remarks>Fullscreen windows are borderless windowed with "always on top" behavior.  Be sure to add a way to close the window as the X will not be visible.</remarks>
-        /// <param name="title">The window's title.  Note that this is hidden for fullscreen windows.</param>
-        /// <param name="xPos">X position of the window.  Largely irrelevant for fullscreen.</param>
-        /// <param name="yPos">Y position of the window.  Largely irrelevant for fullscreen.</param>
-        /// <param name="width">Width of the window.  Unused for fullscreen.</param>
-        /// <param name="height">Height of the window.  Unused for fullscreen.</param>
-        /// <param name="fullscreen">Whether the window should be fullscreen.  Fullscreen windows are borderless windowed with "Always on top" behavior.</param>
-        public SimpleImGuiScene(string title, int xPos = SDL_WINDOWPOS_UNDEFINED, int yPos = SDL_WINDOWPOS_UNDEFINED, int width = 0, int height = 0, bool fullscreen = false)
+        /// <param name="backend">Which rendering backend to use.</param>
+        /// <param name="createInfo">Creation details for the window.</param>
+        /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
+        public SimpleImGuiScene(RendererFactory.RendererBackend backend, WindowCreateInfo createInfo, bool enableRenderDebugging = false)
         {
-            Window = new SimpleSDLWindow(title, xPos, yPos, width, height, fullscreen);
-            D3D = new SimpleD3D(Window.GetHWnd());
+            Renderer = RendererFactory.CreateRenderer(backend, enableRenderDebugging);
+            Window = WindowFactory.CreateForRenderer(Renderer, createInfo);
 
             ImGui.CreateContext();
 
             ImGui_Impl_SDL.Init(Window.Window);
-            ImGui_Impl_DX11.Init(D3D.Device, D3D.Context, false);
+            Renderer.ImGui_Init();
 
             Window.OnSDLEvent += ImGui_Impl_SDL.ProcessEvent;
         }
@@ -58,7 +61,7 @@ namespace ImGuiScene
         /// Loads an image from a file and creates the corresponding DX texture
         /// </summary>
         /// <param name="path">The filepath to the image</param>
-        /// <returns>The NativePointer associated with the loaded DX ShaderResourceView, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <returns>A pointer associated with the loaded texture resource, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
         /// <remarks>Currently any textures created by this method are managed automatically and exist until this class object is Disposed.</remarks>
         public IntPtr LoadImage(string path)
         {
@@ -72,10 +75,10 @@ namespace ImGuiScene
         }
 
         /// <summary>
-        /// Loads an image from a byte array of image data and creates the corresponding DX texture
+        /// Loads an image from a byte array of image data and creates the corresponding texture resource.
         /// </summary>
         /// <param name="imageBytes">The raw image data</param>
-        /// <returns>The NativePointer associated with the loaded DX ShaderResourceView, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <returns>A pointer associated with the loaded texture resource, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
         /// <remarks>Currently any textures created by this method are managed automatically and exist until this class object is Disposed.</remarks>
         public IntPtr LoadImage(byte[] imageBytes)
         {
@@ -96,10 +99,10 @@ namespace ImGuiScene
         }
 
         /// <summary>
-        /// Internal helper to create a DX ShaderResourceView from an existing SDL_Surface*
+        /// Internal helper to create a texture resource from an existing SDL_Surface*
         /// </summary>
         /// <param name="surface">The existing SDL_Surface* representing the image</param>
-        /// <returns>The NativePointer associated with the loaded DX ShaderResourceView, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <returns>A pointer associated with the loaded texture resource, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
         private IntPtr LoadImage_Internal(IntPtr surface)
         {
             IntPtr ret = IntPtr.Zero;
@@ -109,11 +112,11 @@ namespace ImGuiScene
                 SDL_Surface* surf = (SDL_Surface*)surface;
                 var bytesPerPixel = ((SDL_PixelFormat*)surf->format)->BytesPerPixel;
 
-                var texture = D3D.CreateTexture(&surf->pixels, surf->w, surf->h, bytesPerPixel);
+                var texture = Renderer.CreateTexture(&surf->pixels, surf->w, surf->h, bytesPerPixel);
                 if (texture != null)
                 {
                     _allocatedResources.Add(texture);
-                    ret = texture.NativePointer;
+                    ret = texture.ImGuiHandle();
                 }
             }
 
@@ -128,18 +131,18 @@ namespace ImGuiScene
         {
             Window.ProcessEvents();
 
-            ImGui_Impl_DX11.NewFrame();
+            Renderer.ImGui_NewFrame();
             ImGui_Impl_SDL.NewFrame();
 
             ImGui.NewFrame();
                 OnBuildUI?.Invoke();
             ImGui.Render();
 
-            D3D.Clear();
+            Renderer.Clear();
 
-            ImGui_Impl_DX11.RenderDrawData(ImGui.GetDrawData());
+            Renderer.ImGui_RenderDrawData(ImGui.GetDrawData());
 
-            D3D.Present();
+            Renderer.Present();
         }
 
         /// <summary>
@@ -170,7 +173,8 @@ namespace ImGuiScene
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
-                ImGui_Impl_DX11.Shutdown();
+
+                Renderer.ImGui_Shutdown();
                 ImGui_Impl_SDL.Shutdown();
 
                 ImGui.DestroyContext();
@@ -183,8 +187,8 @@ namespace ImGuiScene
                 // We also never call IMG_Load() for now since it is done automatically where needed
                 IMG_Quit();
 
-                D3D?.Dispose();
-                D3D = null;
+                Renderer?.Dispose();
+                Renderer = null;
 
                 Window?.Dispose();
                 Window = null;

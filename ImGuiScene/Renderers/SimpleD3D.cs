@@ -12,36 +12,50 @@ namespace ImGuiScene
     /// <summary>
     /// A simple wrapper for a minimal DirectX 11 renderer.  Consumers of this class will need to implement all actual pipeline and render logic externally.
     /// </summary>
-    public class SimpleD3D : IDisposable
+    public class SimpleD3D : IRenderer
     {
-        private Device _device;
-        public Device Device
-        {
-            // need an exposed variable to use as an out param for device creation
-            get { return _device; }
-            private set { _device = value; }
-        }
+        public RendererFactory.RendererBackend Type => RendererFactory.RendererBackend.DirectX11;
 
-        /// <summary>
-        /// The device's immediateContext
-        /// </summary>
-        public DeviceContext Context { get; private set; }
-
+        private RawColor4 _clearColor;
         /// <summary>
         /// The renderer clear color used by <see cref="Clear"/>
         /// </summary>
-        public RawColor4 ClearColor { get; set; }
+        public System.Numerics.Vector4 ClearColor
+        {
+            get
+            {
+                return new System.Numerics.Vector4(_clearColor.R, _clearColor.G, _clearColor.B, _clearColor.A);
+            }
+            set
+            {
+                _clearColor = new RawColor4(value.X, value.Y, value.Z, value.W);
+            }
+        }
 
-        // no reason to expose these at the moment
+        public bool Debuggable { get; }
+
+        private Device _device;
+        private DeviceContext _deviceContext;
         private SwapChain _swapChain;
         private RenderTargetView _backBufferView;
+        private ImGui_Impl_DX11 _backend = new ImGui_Impl_DX11();
+
+        internal SimpleD3D(bool enableDebugging)
+        {
+            Debuggable = enableDebugging;
+        }
 
         /// <summary>
-        /// Initialized DirectX 11 for the specified window
+        /// Initialize DirectX 11 for the specified window.
         /// </summary>
-        /// <param name="hWnd">The windows HWND of the target window to render into</param>
-        public SimpleD3D(IntPtr hWnd)
+        /// <param name="sdlWindow">The SimpleSDLWindow to render into</param>
+        public void AttachToWindow(SimpleSDLWindow sdlWindow)
         {
+            // DX seems to need this to happen before context creation
+            sdlWindow.Show();
+
+            var hWnd = sdlWindow.GetHWnd();
+
             var desc = new SwapChainDescription
             {
                 BufferCount = 1,
@@ -63,7 +77,7 @@ namespace ImGuiScene
                 IsWindowed = true
             };
 
-            Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.None, desc, out _device, out _swapChain);
+            Device.CreateWithSwapChain(DriverType.Hardware, Debuggable ? DeviceCreationFlags.Debug : DeviceCreationFlags.None, desc, out _device, out _swapChain);
 
             // disable alt-enter fullscreen toggle, and ignore prtscn in case it does anything
             using (var factory = _swapChain.GetParent<Factory>())
@@ -76,10 +90,10 @@ namespace ImGuiScene
                 _backBufferView = new RenderTargetView(_device, backBuffer);
             }
 
-            Context = _device.ImmediateContext;
+            _deviceContext = _device.ImmediateContext;
 
             // in theory this may not always work here... but it will for any actual uses of this class
-            Context.OutputMerger.SetTargets(_backBufferView);
+            _deviceContext.OutputMerger.SetTargets(_backBufferView);
         }
 
         /// <summary>
@@ -87,7 +101,7 @@ namespace ImGuiScene
         /// </summary>
         public void Clear()
         {
-            Context.ClearRenderTargetView(_backBufferView, ClearColor);
+            _deviceContext.ClearRenderTargetView(_backBufferView, _clearColor);
         }
 
         /// <summary>
@@ -105,9 +119,9 @@ namespace ImGuiScene
         /// <param name="width">The width of the image</param>
         /// <param name="height">The height of the image</param>
         /// <param name="bytesPerPixel">The bytes per pixel of the image, used for stride calculations</param>
-        /// <returns>The created ShaderResourceView for the image, null on failure.</returns>
+        /// <returns>The wrapped ShaderResourceView created for the image, null on failure.</returns>
         /// <remarks>The ShaderResourceView created by this method is not managed, and it is up to calling code to invoke Dispose() when done</remarks>
-        public unsafe ShaderResourceView CreateTexture(void* pixelData, int width, int height, int bytesPerPixel)
+        public unsafe TextureWrap CreateTexture(void* pixelData, int width, int height, int bytesPerPixel)
         {
             ShaderResourceView resView = null;
 
@@ -117,7 +131,7 @@ namespace ImGuiScene
                 Height = height,
                 MipLevels = 1,
                 ArraySize = 1,
-                Format = SharpDX.DXGI.Format.R8G8B8A8_UNorm,    // TODO - support other formats?
+                Format = Format.R8G8B8A8_UNorm,    // TODO - support other formats?
                 SampleDescription = new SampleDescription(1, 0),
                 Usage = ResourceUsage.Immutable,
                 BindFlags = BindFlags.ShaderResource,
@@ -130,13 +144,35 @@ namespace ImGuiScene
                 resView = new ShaderResourceView(_device, texture, new ShaderResourceViewDescription
                 {
                     Format = texDesc.Format,
-                    Dimension = SharpDX.Direct3D.ShaderResourceViewDimension.Texture2D,
+                    Dimension = ShaderResourceViewDimension.Texture2D,
                     Texture2D = { MipLevels = texDesc.MipLevels }
                 });
             }
 
-            return resView;
+            return new D3DTextureWrap(resView);
         }
+
+        #region ImGui forwarding
+        public void ImGui_Init()
+        {
+            _backend.Init(false, _device, _deviceContext);
+        }
+
+        public void ImGui_Shutdown()
+        {
+            _backend.Shutdown();
+        }
+
+        public void ImGui_NewFrame()
+        {
+            _backend.NewFrame();
+        }
+
+        public void ImGui_RenderDrawData(ImGuiNET.ImDrawDataPtr drawData)
+        {
+            _backend.RenderDrawData(drawData);
+        }
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false;
@@ -152,10 +188,10 @@ namespace ImGuiScene
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
-                Context?.ClearState();
-                Context?.Flush();
-                Context?.Dispose();
-                Context = null;
+                _deviceContext?.ClearState();
+                _deviceContext?.Flush();
+                _deviceContext?.Dispose();
+                _deviceContext = null;
 
                 _backBufferView?.Dispose();
                 _backBufferView = null;
@@ -177,6 +213,61 @@ namespace ImGuiScene
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+    }
+
+    /// <summary>
+    /// DX11 Implementation of <see cref="TextureWrap"/>.
+    /// Provides a simple wrapped view of the disposeable resource as well as the handle for ImGui.
+    /// </summary>
+    public class D3DTextureWrap : TextureWrap
+    {
+        private ShaderResourceView _resourceView = null;
+
+        public D3DTextureWrap(ShaderResourceView texView)
+        {
+            _resourceView = texView;
+        }
+
+        public IntPtr ImGuiHandle()
+        {
+            return (_resourceView == null) ? IntPtr.Zero : _resourceView.NativePointer;
+        }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                _resourceView?.Dispose();
+                _resourceView = null;
+
+                disposedValue = true;
+            }
+        }
+
+        ~D3DTextureWrap()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
             GC.SuppressFinalize(this);
         }

@@ -8,9 +8,14 @@ namespace ImGuiSceneTest
     {
         static void Main(string[] args)
         {
-            using (var scene = new SimpleImGuiScene("ImGui Test", fullscreen: true))
+            using (var scene = new SimpleImGuiScene(RendererFactory.RendererBackend.OpenGL3, new WindowCreateInfo
             {
-                scene.Window.MakeTransparent(SimpleSDLWindow.CreateColorKey(0, 0, 0));
+                Title = "ImGui Test",
+                Fullscreen = true,
+                TransparentColor = new float[] { 0, 0, 0 }
+            }))
+            {
+                scene.Renderer.ClearColor = new System.Numerics.Vector4(0, 0, 0, 0);
 
                 scene.Window.OnSDLEvent += (ref SDL_Event sdlEvent) =>
                 {

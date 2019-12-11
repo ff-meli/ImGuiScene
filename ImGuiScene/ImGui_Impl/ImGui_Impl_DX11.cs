@@ -5,7 +5,6 @@ using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using System;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -20,25 +19,25 @@ namespace ImGuiScene
     /// Currently undocumented because it is a horrible mess.
     /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_dx11.cpp
     /// </summary>
-    public class ImGui_Impl_DX11
+    public class ImGui_Impl_DX11 : IImGuiRenderer
     {
-        private static Device _device = null;
-        private static DeviceContext _deviceContext = null;
-        private static ShaderResourceView _fontResourceView = null;
-        private static SamplerState _fontSampler = null;
-        private static VertexShader _vertexShader = null;
-        private static PixelShader _pixelShader = null;
-        private static InputLayout _inputLayout = null;
-        private static Buffer _vertexConstantBuffer = null;
-        private static BlendState _blendState = null;
-        private static RasterizerState _rasterizerState = null;
-        private static DepthStencilState _depthStencilState = null;
-        private static Buffer _vertexBuffer = null;
-        private static Buffer _indexBuffer = null;
-        private static int _vertexBufferSize = 0;
-        private static int _indexBufferSize = 0;
+        private Device _device = null;
+        private DeviceContext _deviceContext = null;
+        private ShaderResourceView _fontResourceView = null;
+        private SamplerState _fontSampler = null;
+        private VertexShader _vertexShader = null;
+        private PixelShader _pixelShader = null;
+        private InputLayout _inputLayout = null;
+        private Buffer _vertexConstantBuffer = null;
+        private BlendState _blendState = null;
+        private RasterizerState _rasterizerState = null;
+        private DepthStencilState _depthStencilState = null;
+        private Buffer _vertexBuffer = null;
+        private Buffer _indexBuffer = null;
+        private int _vertexBufferSize = 0;
+        private int _indexBufferSize = 0;
 
-        private static bool _backupState = true;
+        private bool _backupState = true;
 
         private struct BackupDx11State
         {
@@ -69,7 +68,7 @@ namespace ImGuiScene
             public IntPtr InputLayout;
         }
 
-        private static T GetShaderInstances<T>(CommonShaderStage<T> shader, out ClassInstance[] instances) where T : DeviceChild
+        private T GetShaderInstances<T>(CommonShaderStage<T> shader, out ClassInstance[] instances) where T : DeviceChild
         {
             var tempInstances = new ClassInstance[256];
             var ret = shader.Get(tempInstances);
@@ -98,7 +97,7 @@ namespace ImGuiScene
 
         // This is pretty awful in the main code, and SharpDX makes it worse
         // Best to only use this when actually necessary
-        private static BackupDx11State? BackupState()
+        private BackupDx11State? BackupState()
         {
             if (_backupState)
             {
@@ -137,7 +136,7 @@ namespace ImGuiScene
             return null;
         }
 
-        private static void RestoreState(BackupDx11State? oldState)
+        private void RestoreState(BackupDx11State? oldState)
         {
             if (!_backupState || !oldState.HasValue)
             {
@@ -168,7 +167,7 @@ namespace ImGuiScene
             _deviceContext.InputAssembler.InputLayout = new InputLayout(old.InputLayout);
         }
 
-        public static void SetupRenderState(ImDrawDataPtr drawData)
+        public void SetupRenderState(ImDrawDataPtr drawData)
         {
             // Setup viewport
             _deviceContext.Rasterizer.SetViewport(0, 0, drawData.DisplaySize.X, drawData.DisplaySize.Y);
@@ -199,7 +198,7 @@ namespace ImGuiScene
             _deviceContext.Rasterizer.State = _rasterizerState;
         }
 
-        public static void RenderDrawData(ImDrawDataPtr drawData)
+        public void RenderDrawData(ImDrawDataPtr drawData)
         {
             // Avoid rendering when minimized
             if (drawData.DisplaySize.X <= 0 || drawData.DisplaySize.Y <= 0)
@@ -337,7 +336,7 @@ namespace ImGuiScene
             RestoreState(oldState);
         }
 
-        public static void CreateFontsTexture()
+        public void CreateFontsTexture()
         {
             var io = ImGui.GetIO();
 
@@ -391,7 +390,7 @@ namespace ImGuiScene
             }
         }
 
-        public static bool CreateDeviceObjects()
+        public bool CreateDeviceObjects()
         {
             if (_device == null)
             {
@@ -493,7 +492,7 @@ namespace ImGuiScene
             return true;
         }
 
-        public static void InvalidateDeviceObjects()
+        public void InvalidateDeviceObjects()
         {
             if (_device == null)
             {
@@ -535,21 +534,19 @@ namespace ImGuiScene
             _vertexShader = null;
         }
 
-        public static bool Init(Device device, DeviceContext context, bool backupState = true)
+        public void Init(bool backupState = true, params object[] initParams)
         {
             // ImGui.GetIO() backend properties are read-only for some reason, so we can't set the name etc
             ImGui.GetIO().BackendFlags = ImGui.GetIO().BackendFlags | ImGuiBackendFlags.RendererHasVtxOffset;
 
-            _device = device;
-            _deviceContext = context;
+            _device = (Device)initParams[0];
+            _deviceContext = (DeviceContext)initParams[1];
             _backupState = backupState;
 
             // SharpDX also doesn't allow reference managment
-
-            return true;
         }
 
-        public static void Shutdown()
+        public void Shutdown()
         {
             InvalidateDeviceObjects();
 
@@ -558,7 +555,7 @@ namespace ImGuiScene
             _deviceContext = null;
         }
 
-        public static void NewFrame()
+        public void NewFrame()
         {
             if (_fontSampler == null)
             {
