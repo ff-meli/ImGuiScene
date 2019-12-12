@@ -66,7 +66,7 @@ namespace ImGuiScene
         public IntPtr LoadImage(string path)
         {
             var surface = IMG_Load(path);
-            if (surface != null)
+            if (surface != IntPtr.Zero)
             {
                 return LoadImage_Internal(surface);
             }
@@ -88,7 +88,7 @@ namespace ImGuiScene
                 {
                     var rw = SDL_RWFromConstMem((IntPtr)mem, imageBytes.Length);
                     var surface = IMG_Load_RW(rw, 1);
-                    if (surface != null)
+                    if (surface != IntPtr.Zero)
                     {
                         return LoadImage_Internal(surface);
                     }
@@ -112,7 +112,7 @@ namespace ImGuiScene
                 SDL_Surface* surf = (SDL_Surface*)surface;
                 var bytesPerPixel = ((SDL_PixelFormat*)surf->format)->BytesPerPixel;
 
-                var texture = Renderer.CreateTexture(&surf->pixels, surf->w, surf->h, bytesPerPixel);
+                var texture = Renderer.CreateTexture((void*)surf->pixels, surf->w, surf->h, bytesPerPixel);
                 if (texture != null)
                 {
                     _allocatedResources.Add(texture);
