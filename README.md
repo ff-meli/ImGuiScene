@@ -3,6 +3,21 @@ A simple ibrary that wraps everything necessary to add ImGui support to a C# pro
 
 ImGui integration is done with [ImGui.NET](https://github.com/mellinoe/ImGui.NET), while window creation and events use [SDL2-CS](https://github.com/flibitijibibo/SDL2-CS).  The semi-official ImGui backend implementations for [SDL](https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_sdl.cpp), [DX11](https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_dx11.cpp), and [OpenGL3](https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_opengl3.cpp) were ported as directly as possible to SDL2-CS, SharpDX and OpenGL.NET.  The C++ sources for those implementations are extremely messy and poor as-is, and currently no effort has been made to clean them up for C#, or to impose reasonable code design on them.  They do work for now, and hopefully I can improve on them later.
 
+### How to use
+There are two main ways of using ImGuiScene in your project:
+* As regular references (recommended):
+  * Do a recursive clone of this project
+  * Build it
+  * Add the 3 output dlls (ImGuiScene.dll, SDL2-CS.dll and ImGui.NET.dll) as references in your project
+* As a submodule:
+  * Create your project and git repo
+  * Add this project as a submodule
+  * Do a recursive submodule init to pull in dependencies
+  * Add the _solution_ from this project to your solution (Add existing project, change filter to sln)
+    * This pulls in all the subprojects necessary to build
+  * Add the ImGuiScene, ImGui.NET-472, and SDL2-CS projects as project references in your project
+    * ImGuiSceneTest can be deleted from your project, or just ignored
+
 #### Usage Note
 You may need to ensure "Prefer 32-bit" is disabled for your project if you use the AnyCPU target.  This is due to the version of the native dlls that are included; I will look into providing a 32-bit version as well in the future.
 
