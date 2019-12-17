@@ -13,6 +13,7 @@ namespace ImGuiScene
     /// <summary>
     /// Currently undocumented because it is a horrible mess.
     /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_opengl3.cpp
+    /// State backup IS done for this renderer, because SDL does not play nicely when using OpenGL.
     /// </summary>
     public class ImGui_Impl_OpenGL3 : IImGuiRenderer
     {
@@ -45,8 +46,12 @@ namespace ImGuiScene
             }
 
             // Backup GL state
+            // The vast majority of this probably is not necessary, and ideally should be handled by the main render application
+            // with a state cache if actually required.
+            // At the very least, however, it appears that SDL does not maintain/reset its own state perfectly when using opengl
+            // and the scissor rect will break things.  Since I'm not sure if anything else would also break, and since this backup
+            // is not nearly as terrible as the DX11 version was, I am leaving this in place for now.
             Gl.GetInteger(GetPName.ActiveTexture, out int lastActiveTexture);
-            Gl.ActiveTexture(TextureUnit.Texture0);
             Gl.GetInteger(GetPName.CurrentProgram, out int lastProgram);
             Gl.GetInteger(GetPName.TextureBinding2d, out int lastTexture);
             Gl.GetInteger(GetPName.ArrayBufferBinding, out int lastArrayBuffer);
@@ -68,6 +73,7 @@ namespace ImGuiScene
             var lastEnableScissorTest = Gl.IsEnabled(EnableCap.ScissorTest);
 
             // Setup desired GL state
+            Gl.ActiveTexture(TextureUnit.Texture0);
             // Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
             // The renderer would actually work without any VAO bound, but then our VertexAttrib calls would overwrite the default one currently bound.
             _vertexArrayObject = Gl.GenVertexArray();
@@ -166,10 +172,8 @@ namespace ImGuiScene
             Gl.Scissor(lastScissorBox[0], lastScissorBox[1], lastScissorBox[2], lastScissorBox[3]);
         }
 
-        public void Init(bool backupState = true, params object[] initParams)
+        public void Init(params object[] initParams)
         {
-            // ignoring backupState for now; always on
-
             var io = ImGui.GetIO();
             // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
             io.BackendFlags = io.BackendFlags | ImGuiBackendFlags.RendererHasVtxOffset;

@@ -144,7 +144,7 @@ namespace ImGuiScene
         #region ImGui forwarding
         public void ImGui_Init()
         {
-            _backend.Init(true);
+            _backend.Init();
         }
 
         public void ImGui_Shutdown()

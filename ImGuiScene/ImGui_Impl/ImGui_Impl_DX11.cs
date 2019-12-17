@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
-using DeviceChild = SharpDX.Direct3D11.DeviceChild;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
 
 namespace ImGuiScene
@@ -18,6 +17,9 @@ namespace ImGuiScene
     /// <summary>
     /// Currently undocumented because it is a horrible mess.
     /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_dx11.cpp
+    /// State backup was removed because ImGui does it poorly and SharpDX makes it worse; state caching should
+    /// be the responsibility of the main render application anyway (which for most uses of this class does not
+    /// exist at all)
     /// </summary>
     public class ImGui_Impl_DX11 : IImGuiRenderer
     {
@@ -36,136 +38,9 @@ namespace ImGuiScene
         private Buffer _indexBuffer = null;
         private int _vertexBufferSize = 0;
         private int _indexBufferSize = 0;
-
-        private bool _backupState = true;
-
-        private struct BackupDx11State
-        {
-            public Rectangle[] ScissorRects; //16
-            public RawViewportF[] Viewports;// 16
-            public IntPtr RasterizerState;
-            public IntPtr BlendState;
-            public RawColor4 BlendFactor;
-            public int SampleMask;
-            public int StencilRef;
-            public IntPtr DepthStencilState;
-            public IntPtr PSShaderResource;
-            public IntPtr PSSampler;
-            public IntPtr PS;
-            public IntPtr VS;
-            public IntPtr GS;
-            public ClassInstance[] PSInstances;
-            public ClassInstance[] VSInstances;
-            public ClassInstance[] GSInstances;
-            public PrimitiveTopology PrimitiveTopology;
-            public IntPtr IndexBuffer;
-            public IntPtr VertexBuffer;
-            public IntPtr VSConstantBuffer;
-            public int IndexBufferOffset;
-            public int VertexBufferStride;
-            public int VertexBufferOffset;
-            public Format IndexBufferFormat;
-            public IntPtr InputLayout;
-        }
-
-        private T GetShaderInstances<T>(CommonShaderStage<T> shader, out ClassInstance[] instances) where T : DeviceChild
-        {
-            var tempInstances = new ClassInstance[256];
-            var ret = shader.Get(tempInstances);
-
-            int count;
-            for (count = 0; count < 256; count++)
-            {
-                if (tempInstances[count] == null)
-                {
-                    break;
-                }
-            }
-
-            if (count == 0)
-            {
-                instances = null;
-            }
-            else
-            {
-                instances = new ClassInstance[count];
-                Array.Copy(tempInstances, 0, instances, 0, count);
-            }
-
-            return ret;
-        }
-
-        // This is pretty awful in the main code, and SharpDX makes it worse
-        // Best to only use this when actually necessary
-        private BackupDx11State? BackupState()
-        {
-            if (_backupState)
-            {
-                // (unfortunately this is very ugly looking and verbose. Close your eyes!)
-                BackupDx11State old = new BackupDx11State();
-                old.ScissorRects = new Rectangle[16];
-                old.Viewports = new RawViewportF[16];
-                _deviceContext.Rasterizer.GetScissorRectangles(old.ScissorRects);
-                _deviceContext.Rasterizer.GetViewports(old.Viewports);
-                old.RasterizerState = _deviceContext.Rasterizer.State?.NativePointer ?? IntPtr.Zero;
-                old.BlendState = _deviceContext.OutputMerger.GetBlendState(out old.BlendFactor, out old.SampleMask)?.NativePointer ?? IntPtr.Zero;
-                old.DepthStencilState = _deviceContext.OutputMerger.GetDepthStencilState(out old.StencilRef)?.NativePointer ?? IntPtr.Zero;
-                old.PSShaderResource = _deviceContext.PixelShader.GetShaderResources(0, 1)[0]?.NativePointer ?? IntPtr.Zero;
-                old.PSSampler = _deviceContext.PixelShader.GetSamplers(0, 1)[0]?.NativePointer ?? IntPtr.Zero;
-                // this is really poorly done in SharpDX... they hide the methods that would return the count
-                old.PS = GetShaderInstances(_deviceContext.PixelShader, out old.PSInstances)?.NativePointer ?? IntPtr.Zero;
-                old.VS = GetShaderInstances(_deviceContext.VertexShader, out old.VSInstances)?.NativePointer ?? IntPtr.Zero;
-                old.VSConstantBuffer = _deviceContext.VertexShader.GetConstantBuffers(0, 1)[0]?.NativePointer ?? IntPtr.Zero;
-                old.GS = GetShaderInstances(_deviceContext.GeometryShader, out old.GSInstances)?.NativePointer ?? IntPtr.Zero;
-
-                old.PrimitiveTopology = _deviceContext.InputAssembler.PrimitiveTopology;
-                _deviceContext.InputAssembler.GetIndexBuffer(out Buffer indexBufferRef, out old.IndexBufferFormat, out old.IndexBufferOffset);
-                old.IndexBuffer = indexBufferRef?.NativePointer ?? IntPtr.Zero;
-                var vertexBuffersOut = new Buffer[1];
-                var stridesRef = new int[1];
-                var offsetsRef = new int[1];
-                _deviceContext.InputAssembler.GetVertexBuffers(0, 1, vertexBuffersOut, stridesRef, offsetsRef);
-                old.VertexBuffer = vertexBuffersOut[0]?.NativePointer ?? IntPtr.Zero;
-                old.VertexBufferStride = stridesRef[0];
-                old.VertexBufferOffset = offsetsRef[0];
-                old.InputLayout = _deviceContext.InputAssembler.InputLayout?.NativePointer ?? IntPtr.Zero;
-
-                return old;
-            }
-
-            return null;
-        }
-
-        private void RestoreState(BackupDx11State? oldState)
-        {
-            if (!_backupState || !oldState.HasValue)
-            {
-                return;
-            }
-
-            BackupDx11State old = oldState.Value;
-
-            _deviceContext.Rasterizer.SetScissorRectangles(old.ScissorRects);
-            _deviceContext.Rasterizer.SetViewports(old.Viewports);
-            _deviceContext.Rasterizer.State = new RasterizerState(old.RasterizerState);
-            _deviceContext.OutputMerger.SetBlendState(new BlendState(old.BlendState), old.BlendFactor, old.SampleMask);
-            _deviceContext.OutputMerger.SetDepthStencilState(new DepthStencilState(old.DepthStencilState));
-            _deviceContext.PixelShader.SetShaderResource(0, new ShaderResourceView(old.PSShaderResource));
-            _deviceContext.PixelShader.SetSampler(0, new SamplerState(old.PSSampler));
-            _deviceContext.PixelShader.Set(new PixelShader(old.PS), old.PSInstances);
-            _deviceContext.VertexShader.Set(new VertexShader(old.VS), old.VSInstances);
-            _deviceContext.VertexShader.SetConstantBuffer(0, new Buffer(old.VSConstantBuffer));
-            _deviceContext.GeometryShader.Set(new GeometryShader(old.GS), old.GSInstances);
-            _deviceContext.InputAssembler.PrimitiveTopology = old.PrimitiveTopology;
-            _deviceContext.InputAssembler.SetIndexBuffer(new Buffer(old.IndexBuffer), old.IndexBufferFormat, old.IndexBufferOffset);
-            _deviceContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding
-            {
-                Buffer = new Buffer(old.VertexBuffer),
-                Stride = old.VertexBufferStride,
-                Offset = old.VertexBufferOffset
-            });
-            _deviceContext.InputAssembler.InputLayout = new InputLayout(old.InputLayout);
-        }
+        private VertexBufferBinding _vertexBinding;
+        // so we don't make a temporary object every frame
+        private RawColor4 _blendColor = new RawColor4(0, 0, 0, 0);   
 
         public void SetupRenderState(ImDrawDataPtr drawData)
         {
@@ -174,12 +49,8 @@ namespace ImGuiScene
 
             // Setup shader and vertex buffers
             _deviceContext.InputAssembler.InputLayout = _inputLayout;
-            _deviceContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding
-            {
-                Buffer = _vertexBuffer,
-                Offset = 0,
-                Stride = Unsafe.SizeOf<ImDrawVert>()
-            });
+            _vertexBinding.Buffer = _vertexBuffer;
+            _deviceContext.InputAssembler.SetVertexBuffers(0, _vertexBinding);
             _deviceContext.InputAssembler.SetIndexBuffer(_indexBuffer, Format.R16_UInt, 0);
             _deviceContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
             _deviceContext.VertexShader.Set(_vertexShader);
@@ -193,7 +64,7 @@ namespace ImGuiScene
 
             // Setup blend state
             _deviceContext.OutputMerger.BlendState = _blendState;
-            _deviceContext.OutputMerger.BlendFactor = new RawColor4(0, 0, 0, 0);
+            _deviceContext.OutputMerger.BlendFactor = _blendColor;
             _deviceContext.OutputMerger.DepthStencilState = _depthStencilState;
             _deviceContext.Rasterizer.State = _rasterizerState;
         }
@@ -207,7 +78,9 @@ namespace ImGuiScene
             }
 
             if (!drawData.Valid || drawData.CmdListsCount == 0)
+            {
                 return;
+            }
 
             //drawData.ScaleClipRects(ImGui.GetIO().DisplayFramebufferScale);
 
@@ -225,6 +98,14 @@ namespace ImGuiScene
                     CpuAccessFlags = CpuAccessFlags.Write,
                     OptionFlags = ResourceOptionFlags.None
                 });
+
+                // (Re)make this here rather than every frame
+                _vertexBinding = new VertexBufferBinding
+                {
+                    Buffer = _vertexBuffer,
+                    Stride = Unsafe.SizeOf<ImDrawVert>(),
+                    Offset = 0
+                };
             }
 
             if (_indexBuffer == null || _indexBufferSize < drawData.TotalIdxCount)
@@ -292,10 +173,6 @@ namespace ImGuiScene
             }
             _deviceContext.UnmapSubresource(_vertexConstantBuffer, 0);
 
-            // Backup DX state that will be modified to restore it afterwards
-            // note that this does nothing if _backupState is false
-            var oldState = BackupState();
-
             // Setup desired DX state
             SetupRenderState(drawData);
 
@@ -331,9 +208,6 @@ namespace ImGuiScene
                 indexOffset += cmdList.IdxBuffer.Size;
                 vertexOffset += cmdList.VtxBuffer.Size;
             }
-
-            // Restore modified DX state
-            RestoreState(oldState);
         }
 
         public void CreateFontsTexture()
@@ -534,14 +408,13 @@ namespace ImGuiScene
             _vertexShader = null;
         }
 
-        public void Init(bool backupState = true, params object[] initParams)
+        public void Init(params object[] initParams)
         {
             // ImGui.GetIO() backend properties are read-only for some reason, so we can't set the name etc
             ImGui.GetIO().BackendFlags = ImGui.GetIO().BackendFlags | ImGuiBackendFlags.RendererHasVtxOffset;
 
             _device = (Device)initParams[0];
             _deviceContext = (DeviceContext)initParams[1];
-            _backupState = backupState;
 
             // SharpDX also doesn't allow reference managment
         }

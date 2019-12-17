@@ -155,7 +155,7 @@ namespace ImGuiScene
         #region ImGui forwarding
         public void ImGui_Init()
         {
-            _backend.Init(false, _device, _deviceContext);
+            _backend.Init(_device, _deviceContext);
         }
 
         public void ImGui_Shutdown()
