@@ -1,12 +1,10 @@
 # ImGuiScene
-Currently a fairly rough library that wraps everything necessary to add ImGui support to a C# project.
+A simple ibrary that wraps everything necessary to add ImGui support to a C# project.  This is mainly useful inside a dll that is injected into a game or similar process, in order to provide a simple transparent overlay where ImGui controls can be trivially created.  It can also be used as a standalone application for prototyping or testing ImGui scenes etc.
 
 ImGui integration is done with [ImGui.NET](https://github.com/mellinoe/ImGui.NET), while window creation and events use [SDL2-CS](https://github.com/flibitijibibo/SDL2-CS).  The semi-official ImGui backend implementations for [SDL](https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_sdl.cpp), [DX11](https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_dx11.cpp), and [OpenGL3](https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_opengl3.cpp) were ported as directly as possible to SDL2-CS, SharpDX and OpenGL.NET.  The C++ sources for those implementations are extremely messy and poor as-is, and currently no effort has been made to clean them up for C#, or to impose reasonable code design on them.  They do work for now, and hopefully I can improve on them later.
 
-A simple sample application will follow soon.
-
 #### Usage Note
-You may need to ensure "Prefer 32-bit" is disabled for your project if you use the AnyCPU target.  This may be due to the version of the native dlls that are included; I will look into providing a 32-bit version as well in the future.
+You may need to ensure "Prefer 32-bit" is disabled for your project if you use the AnyCPU target.  This is due to the version of the native dlls that are included; I will look into providing a 32-bit version as well in the future.
 
 
 ### Simple example application
