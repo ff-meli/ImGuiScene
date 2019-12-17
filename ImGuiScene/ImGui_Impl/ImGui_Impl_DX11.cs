@@ -214,54 +214,51 @@ namespace ImGuiScene
         {
             var io = ImGui.GetIO();
 
-            unsafe
+            // Build texture atlas
+            io.Fonts.GetTexDataAsRGBA32(out IntPtr fontPixels, out int fontWidth, out int fontHeight, out int fontBytesPerPixel);
+
+            // Upload texture to graphics system
+            var texDesc = new Texture2DDescription
             {
-                // Build texture atlas
-                io.Fonts.GetTexDataAsRGBA32(out byte* fontPixels, out int fontWidth, out int fontHeight, out int fontBytesPerPixel);
-
-                // Upload texture to graphics system
-                var texDesc = new Texture2DDescription
-                {
-                    Width = fontWidth,
-                    Height = fontHeight,
-                    MipLevels = 1,
-                    ArraySize = 1,
-                    Format = Format.R8G8B8A8_UNorm,
-                    SampleDescription = new SampleDescription(1, 0),
-                    Usage = ResourceUsage.Immutable,
-                    BindFlags = BindFlags.ShaderResource,
-                    CpuAccessFlags = CpuAccessFlags.None,
-                    OptionFlags = ResourceOptionFlags.None
-                };
+                Width = fontWidth,
+                Height = fontHeight,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = Format.R8G8B8A8_UNorm,
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Immutable,
+                BindFlags = BindFlags.ShaderResource,
+                CpuAccessFlags = CpuAccessFlags.None,
+                OptionFlags = ResourceOptionFlags.None
+            };
                 
-                using (var fontTexture = new Texture2D(_device, texDesc, new DataRectangle(new IntPtr(fontPixels), fontWidth * fontBytesPerPixel)))
+            using (var fontTexture = new Texture2D(_device, texDesc, new DataRectangle(fontPixels, fontWidth * fontBytesPerPixel)))
+            {
+                // Create texture view
+                _fontResourceView = new ShaderResourceView(_device, fontTexture, new ShaderResourceViewDescription
                 {
-                    // Create texture view
-                    _fontResourceView = new ShaderResourceView(_device, fontTexture, new ShaderResourceViewDescription
-                    {
-                        Format = texDesc.Format,
-                        Dimension = ShaderResourceViewDimension.Texture2D,
-                        Texture2D = { MipLevels = texDesc.MipLevels }
-                    });
-                }
-
-                // Store our identifier
-                io.Fonts.SetTexID(_fontResourceView.NativePointer);
-                io.Fonts.ClearTexData();
-
-                // Create texture sampler
-                _fontSampler = new SamplerState(_device, new SamplerStateDescription
-                {
-                    Filter = Filter.MinMagMipLinear,
-                    AddressU = TextureAddressMode.Wrap,
-                    AddressV = TextureAddressMode.Wrap,
-                    AddressW = TextureAddressMode.Wrap,
-                    MipLodBias = 0,
-                    ComparisonFunction = Comparison.Always,
-                    MinimumLod = 0,
-                    MaximumLod = 0
+                    Format = texDesc.Format,
+                    Dimension = ShaderResourceViewDimension.Texture2D,
+                    Texture2D = { MipLevels = texDesc.MipLevels }
                 });
             }
+
+            // Store our identifier
+            io.Fonts.SetTexID(_fontResourceView.NativePointer);
+            io.Fonts.ClearTexData();
+
+            // Create texture sampler
+            _fontSampler = new SamplerState(_device, new SamplerStateDescription
+            {
+                Filter = Filter.MinMagMipLinear,
+                AddressU = TextureAddressMode.Wrap,
+                AddressV = TextureAddressMode.Wrap,
+                AddressW = TextureAddressMode.Wrap,
+                MipLodBias = 0,
+                ComparisonFunction = Comparison.Always,
+                MinimumLod = 0,
+                MaximumLod = 0
+            });
         }
 
         public bool CreateDeviceObjects()
