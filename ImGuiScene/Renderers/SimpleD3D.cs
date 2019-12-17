@@ -149,7 +149,9 @@ namespace ImGuiScene
                 });
             }
 
-            return new D3DTextureWrap(resView);
+            // no sampler for now because the ImGui implementation we copied doesn't allow for changing it
+
+            return new D3DTextureWrap(resView, width, height);
         }
 
         #region ImGui forwarding
@@ -225,16 +227,18 @@ namespace ImGuiScene
     /// </summary>
     public class D3DTextureWrap : TextureWrap
     {
+        // hold onto this directly for easier dispose etc and in case we need it later
         private ShaderResourceView _resourceView = null;
 
-        public D3DTextureWrap(ShaderResourceView texView)
+        public int Width { get; private set; }
+        public int Height { get; private set; }
+        public IntPtr ImGuiHandle => (_resourceView == null) ? IntPtr.Zero : _resourceView.NativePointer;
+
+        public D3DTextureWrap(ShaderResourceView texView, int width, int height)
         {
             _resourceView = texView;
-        }
-
-        public IntPtr ImGuiHandle()
-        {
-            return (_resourceView == null) ? IntPtr.Zero : _resourceView.NativePointer;
+            Width = width;
+            Height = height;
         }
 
         #region IDisposable Support

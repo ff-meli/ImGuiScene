@@ -58,12 +58,12 @@ namespace ImGuiScene
         }
 
         /// <summary>
-        /// Loads an image from a file and creates the corresponding DX texture
+        /// Loads an image from a file and creates the corresponding GPU texture.
         /// </summary>
         /// <param name="path">The filepath to the image</param>
-        /// <returns>A pointer associated with the loaded texture resource, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <returns>A <see cref="TextureWrap"/> associated with the loaded texture resource, containing a handle suitable for direct use in ImGui, or null on failure.</returns>
         /// <remarks>Currently any textures created by this method are managed automatically and exist until this class object is Disposed.</remarks>
-        public IntPtr LoadImage(string path)
+        public TextureWrap LoadImage(string path)
         {
             var surface = IMG_Load(path);
             if (surface != IntPtr.Zero)
@@ -71,16 +71,16 @@ namespace ImGuiScene
                 return LoadImage_Internal(surface);
             }
 
-            return IntPtr.Zero;
+            return null;
         }
 
         /// <summary>
         /// Loads an image from a byte array of image data and creates the corresponding texture resource.
         /// </summary>
         /// <param name="imageBytes">The raw image data</param>
-        /// <returns>A pointer associated with the loaded texture resource, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
+        /// <returns>A <see cref="TextureWrap"/> associated with the loaded texture resource, containing a handle suitable for direct use in ImGui, or null on failure.</returns>
         /// <remarks>Currently any textures created by this method are managed automatically and exist until this class object is Disposed.</remarks>
-        public IntPtr LoadImage(byte[] imageBytes)
+        public TextureWrap LoadImage(byte[] imageBytes)
         {
             unsafe
             {
@@ -95,17 +95,17 @@ namespace ImGuiScene
                 }
             }
 
-            return IntPtr.Zero;
+            return null;
         }
 
         /// <summary>
         /// Internal helper to create a texture resource from an existing SDL_Surface*
         /// </summary>
         /// <param name="surface">The existing SDL_Surface* representing the image</param>
-        /// <returns>A pointer associated with the loaded texture resource, suitable for direct use in ImGui, or IntPtr.Zero on failure.</returns>
-        private IntPtr LoadImage_Internal(IntPtr surface)
+        /// <returns>A <see cref="TextureWrap"/> associated with the loaded texture resource, containing a handle suitable for direct use in ImGui, or null on failure.</returns>
+        private TextureWrap LoadImage_Internal(IntPtr surface)
         {
-            IntPtr ret = IntPtr.Zero;
+            TextureWrap ret = null;
 
             unsafe
             {
@@ -116,7 +116,7 @@ namespace ImGuiScene
                 if (texture != null)
                 {
                     _allocatedResources.Add(texture);
-                    ret = texture.ImGuiHandle();
+                    ret = texture;
                 }
             }
 

@@ -132,7 +132,7 @@ namespace ImGuiScene
 
             Gl.BindTexture(TextureTarget.Texture2d, (uint)lastTexture);
 
-            return new GLTextureWrap(texture);
+            return new GLTextureWrap(texture, width, height);
         }
 
         private void GL_DebugCallback(DebugSource source, DebugType type, uint id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
@@ -208,16 +208,15 @@ namespace ImGuiScene
     /// </summary>
     public class GLTextureWrap : TextureWrap
     {
-        private uint _textureId;
+        public IntPtr ImGuiHandle { get; private set; }
+        public int Width { get; private set; }
+        public int Height { get; private set; }
 
-        public GLTextureWrap(uint texture)
+        public GLTextureWrap(uint texture, int width, int height)
         {
-            _textureId = texture;
-        }
-
-        public IntPtr ImGuiHandle()
-        {
-            return (IntPtr)_textureId;
+            ImGuiHandle = (IntPtr)texture;
+            Width = width;
+            Height = height;
         }
 
         #region IDisposable Support
@@ -235,10 +234,11 @@ namespace ImGuiScene
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
 
-                if (_textureId != 0)
+                var textureId = (uint)ImGuiHandle;
+                if (textureId != 0)
                 {
-                    Gl.DeleteTextures(_textureId);
-                    _textureId = 0;
+                    Gl.DeleteTextures(textureId);
+                    ImGuiHandle = (IntPtr)0;
                 }
 
                 disposedValue = true;

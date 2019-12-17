@@ -199,6 +199,8 @@ namespace ImGuiScene
                         _deviceContext.Rasterizer.SetScissorRectangle((int)(pcmd.ClipRect.X - clipOff.X), (int)(pcmd.ClipRect.Y - clipOff.Y), (int)(pcmd.ClipRect.Z - clipOff.X), (int)(pcmd.ClipRect.W - clipOff.Y));
 
                         // Bind texture, Draw
+                        // TODO: might be nice to store samplers for loaded textures so that we can look them up and apply them here
+                        // rather than just always using the font sampler
                         var textureSrv = ShaderResourceView.FromPointer<ShaderResourceView>(pcmd.TextureId);
                         _deviceContext.PixelShader.SetShaderResource(0, textureSrv);
                         _deviceContext.DrawIndexed((int)pcmd.ElemCount, (int)(pcmd.IdxOffset + indexOffset), (int)(pcmd.VtxOffset + vertexOffset)); 

@@ -66,11 +66,15 @@ namespace ImGuiScene
     }
 
     /// <summary>
-    /// Simple wrapper to handle texture resources from different APIs, while accounting for resource freeing and ImGui interaction
+    /// Simple wrapper to handle texture resources from different APIs, while accounting for resource freeing and ImGui interaction.
     /// </summary>
     public interface TextureWrap : IDisposable
     {
-        // A texture handle suitable for direct use with ImGui::Image() etc
-        IntPtr ImGuiHandle();
+        /// <summary>
+        /// A texture handle suitable for direct use with ImGui::Image() etc.
+        /// </summary>
+        IntPtr ImGuiHandle { get; }
+        int Width { get; }
+        int Height { get; }
     }
 }
