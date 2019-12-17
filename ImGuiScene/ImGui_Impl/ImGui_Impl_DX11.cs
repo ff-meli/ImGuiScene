@@ -7,7 +7,7 @@ using SharpDX.Mathematics.Interop;
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
@@ -23,6 +23,7 @@ namespace ImGuiScene
     /// </summary>
     public class ImGui_Impl_DX11 : IImGuiRenderer
     {
+        private IntPtr _renderNamePtr = IntPtr.Zero;
         private Device _device = null;
         private DeviceContext _deviceContext = null;
         private ShaderResourceView _fontResourceView = null;
@@ -410,8 +411,14 @@ namespace ImGuiScene
 
         public void Init(params object[] initParams)
         {
-            // ImGui.GetIO() backend properties are read-only for some reason, so we can't set the name etc
             ImGui.GetIO().BackendFlags = ImGui.GetIO().BackendFlags | ImGuiBackendFlags.RendererHasVtxOffset;
+
+            // BackendRendererName is readonly (and null) in ImGui.NET for some reason, but we can hack it via its internal pointer
+            _renderNamePtr = Marshal.StringToHGlobalAnsi("imgui_impl_dx11_c#");
+            unsafe
+            {
+                ImGui.GetIO().NativePtr->BackendRendererName = (byte*)_renderNamePtr.ToPointer();
+            }
 
             _device = (Device)initParams[0];
             _deviceContext = (DeviceContext)initParams[1];
@@ -426,6 +433,12 @@ namespace ImGuiScene
             // we don't own these, so no Dispose()
             _device = null;
             _deviceContext = null;
+
+            if (_renderNamePtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(_renderNamePtr);
+                _renderNamePtr = IntPtr.Zero;
+            }
         }
 
         public void NewFrame()

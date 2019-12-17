@@ -17,6 +17,7 @@ namespace ImGuiScene
     /// </summary>
     public class ImGui_Impl_OpenGL3 : IImGuiRenderer
     {
+        private IntPtr _renderNamePtr = IntPtr.Zero;
         private uint _vertHandle;
         private uint _fragHandle;
         private uint _shaderHandle;
@@ -178,12 +179,25 @@ namespace ImGuiScene
             // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
             io.BackendFlags = io.BackendFlags | ImGuiBackendFlags.RendererHasVtxOffset;
 
+            // BackendRendererName is readonly (and null) in ImGui.NET for some reason, but we can hack it via its internal pointer
+            _renderNamePtr = Marshal.StringToHGlobalAnsi("imgui_impl_opengl3_c#");
+            unsafe
+            {
+                ImGui.GetIO().NativePtr->BackendRendererName = (byte*)_renderNamePtr.ToPointer();
+            }
+
             // literally nothing else in the source implementation of this function is useful
         }
 
         public void Shutdown()
         {
             DestroyDeviceObjects();
+
+            if (_renderNamePtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(_renderNamePtr);
+                _renderNamePtr = IntPtr.Zero;
+            }
         }
 
         public void NewFrame()

@@ -12,6 +12,7 @@ namespace ImGuiScene
     /// </summary>
     public class ImGui_Impl_SDL
     {
+        private static IntPtr _platformNamePtr = IntPtr.Zero;
         private static IntPtr _sdlWindow;
         private static IntPtr[] _mouseCursors = new IntPtr[(int)ImGuiMouseCursor.COUNT];
         private static bool[] _mousePressed = new bool[3];
@@ -104,6 +105,13 @@ namespace ImGuiScene
             // We can honor io.WantSetMousePos requests (optional, rarely used)
             io.BackendFlags = io.BackendFlags | (ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos);
 
+            // BackendPlatformName is readonly (and null) in ImGui.NET for some reason, but we can hack it via its internal pointer
+            _platformNamePtr = Marshal.StringToHGlobalAnsi("imgui_impl_sdl_c#");
+            unsafe
+            {
+                ImGui.GetIO().NativePtr->BackendPlatformName = (byte*)_platformNamePtr.ToPointer();
+            }
+
             // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array.
             io.KeyMap[(int)ImGuiKey.Tab] = (int)SDL_Scancode.SDL_SCANCODE_TAB;
             io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)SDL_Scancode.SDL_SCANCODE_LEFT;
@@ -165,6 +173,12 @@ namespace ImGuiScene
             foreach (var cur in _mouseCursors)
             {
                 SDL_FreeCursor(cur);
+            }
+
+            if (_platformNamePtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(_platformNamePtr);
+                _platformNamePtr = IntPtr.Zero;
             }
         }
 
