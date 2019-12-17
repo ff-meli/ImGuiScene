@@ -199,7 +199,6 @@ namespace ImGuiScene
                         _deviceContext.Rasterizer.SetScissorRectangle((int)(pcmd.ClipRect.X - clipOff.X), (int)(pcmd.ClipRect.Y - clipOff.Y), (int)(pcmd.ClipRect.Z - clipOff.X), (int)(pcmd.ClipRect.W - clipOff.Y));
 
                         // Bind texture, Draw
-                        // Not sure why this bind is done in the loops instead of once per frame, but leaving to match the source for now
                         var textureSrv = ShaderResourceView.FromPointer<ShaderResourceView>(pcmd.TextureId);
                         _deviceContext.PixelShader.SetShaderResource(0, textureSrv);
                         _deviceContext.DrawIndexed((int)pcmd.ElemCount, (int)(pcmd.IdxOffset + indexOffset), (int)(pcmd.VtxOffset + vertexOffset)); 

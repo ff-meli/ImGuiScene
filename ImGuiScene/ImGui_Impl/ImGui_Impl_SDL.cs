@@ -18,7 +18,7 @@ namespace ImGuiScene
         private static bool[] _mousePressed = new bool[3];
         private static ulong _lastTime = 0;
 
-        private delegate void SetClipboardTextDelegate(IntPtr userData, string foo);
+        private delegate void SetClipboardTextDelegate(IntPtr userData, string text);
         private delegate string GetClipboardTextDelegate();
 
         // class variables because they need to exist for the program duration without being gc'd
@@ -109,7 +109,7 @@ namespace ImGuiScene
             _platformNamePtr = Marshal.StringToHGlobalAnsi("imgui_impl_sdl_c#");
             unsafe
             {
-                ImGui.GetIO().NativePtr->BackendPlatformName = (byte*)_platformNamePtr.ToPointer();
+                io.NativePtr->BackendPlatformName = (byte*)_platformNamePtr.ToPointer();
             }
 
             // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array.

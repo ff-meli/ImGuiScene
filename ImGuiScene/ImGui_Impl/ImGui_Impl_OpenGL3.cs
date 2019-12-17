@@ -183,7 +183,7 @@ namespace ImGuiScene
             _renderNamePtr = Marshal.StringToHGlobalAnsi("imgui_impl_opengl3_c#");
             unsafe
             {
-                ImGui.GetIO().NativePtr->BackendRendererName = (byte*)_renderNamePtr.ToPointer();
+                io.NativePtr->BackendRendererName = (byte*)_renderNamePtr.ToPointer();
             }
 
             // literally nothing else in the source implementation of this function is useful
