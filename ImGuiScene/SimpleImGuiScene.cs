@@ -39,14 +39,46 @@ namespace ImGuiScene
         private List<IDisposable> _allocatedResources = new List<IDisposable>();
 
         /// <summary>
+        /// Helper method to create a fullscreen transparent overlay that exits when pressing the specified key.
+        /// </summary>
+        /// <param name="rendererBackend">Which rendering backend to use.</param>
+        /// <param name="closeOverlayKey">Which <see cref="SDL_Scancode"/> to listen for in order to exit the scene.  Defaults to <see cref="SDL_Scancode.SDL_SCANCODE_ESCAPE"/>.</param>
+        /// <param name="transparentColor">The background window color that will be masked as transparent.  Defaults to solid black.</param>
+        /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
+        /// <returns></returns>
+        public static SimpleImGuiScene CreateOverlay(RendererFactory.RendererBackend rendererBackend, SDL_Scancode closeOverlayKey = SDL_Scancode.SDL_SCANCODE_ESCAPE, float[] transparentColor = null, bool enableRenderDebugging = false)
+        {
+            var scene = new SimpleImGuiScene(rendererBackend, new WindowCreateInfo
+            {
+                Title = "ImGui Overlay",
+                Fullscreen = true,
+                TransparentColor = transparentColor ?? new float[] { 0, 0, 0, 0 }
+            }, enableRenderDebugging);
+
+            // Add a simple handler for the close key, so user classes don't have to bother with events in most cases
+            scene.Window.OnSDLEvent += (ref SDL_Event sdlEvent) =>
+            {
+                if (sdlEvent.type == SDL_EventType.SDL_KEYDOWN && sdlEvent.key.keysym.scancode == closeOverlayKey)
+                {
+                    scene.ShouldQuit = true;
+                    return true;
+                }
+
+                return false;
+            };
+
+            return scene;
+        }
+
+        /// <summary>
         /// Creates a new window and a new renderer of the specified type, and initializes ImGUI.
         /// </summary>
         /// <param name="backend">Which rendering backend to use.</param>
         /// <param name="createInfo">Creation details for the window.</param>
         /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
-        public SimpleImGuiScene(RendererFactory.RendererBackend backend, WindowCreateInfo createInfo, bool enableRenderDebugging = false)
+        public SimpleImGuiScene(RendererFactory.RendererBackend rendererBackend, WindowCreateInfo createInfo, bool enableRenderDebugging = false)
         {
-            Renderer = RendererFactory.CreateRenderer(backend, enableRenderDebugging);
+            Renderer = RendererFactory.CreateRenderer(rendererBackend, enableRenderDebugging);
             Window = WindowFactory.CreateForRenderer(Renderer, createInfo);
 
             ImGui.CreateContext();
