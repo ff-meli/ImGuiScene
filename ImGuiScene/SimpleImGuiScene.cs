@@ -36,6 +36,16 @@ namespace ImGuiScene
         /// </summary>
         public BuildUIDelegate OnBuildUI;
 
+        /// <summary>
+        /// Delegate for providing user event handler methods that want to respond to SDL_Events.
+        /// This is just a convenience wrapper around <see cref="SimpleSDLWindow.OnSDLEvent"/>.
+        /// </summary>
+        public SimpleSDLWindow.ProcessEventDelegate OnSDLEvent
+        {
+            get => Window.OnSDLEvent;
+            set { Window.OnSDLEvent = value; }
+        }
+
         private List<IDisposable> _allocatedResources = new List<IDisposable>();
 
         /// <summary>
@@ -43,7 +53,7 @@ namespace ImGuiScene
         /// </summary>
         /// <param name="rendererBackend">Which rendering backend to use.</param>
         /// <param name="closeOverlayKey">Which <see cref="SDL_Scancode"/> to listen for in order to exit the scene.  Defaults to <see cref="SDL_Scancode.SDL_SCANCODE_ESCAPE"/>.</param>
-        /// <param name="transparentColor">The background window color that will be masked as transparent.  Defaults to solid black.</param>
+        /// <param name="transparentColor">A float[4] representing the background window color that will be masked as transparent.  Defaults to solid black.</param>
         /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
         /// <returns></returns>
         public static SimpleImGuiScene CreateOverlay(RendererFactory.RendererBackend rendererBackend, SDL_Scancode closeOverlayKey = SDL_Scancode.SDL_SCANCODE_ESCAPE, float[] transparentColor = null, bool enableRenderDebugging = false)
@@ -56,7 +66,7 @@ namespace ImGuiScene
             }, enableRenderDebugging);
 
             // Add a simple handler for the close key, so user classes don't have to bother with events in most cases
-            scene.Window.OnSDLEvent += (ref SDL_Event sdlEvent) =>
+            scene.OnSDLEvent += (ref SDL_Event sdlEvent) =>
             {
                 if (sdlEvent.type == SDL_EventType.SDL_KEYDOWN && sdlEvent.key.keysym.scancode == closeOverlayKey)
                 {

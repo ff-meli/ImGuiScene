@@ -23,22 +23,22 @@ namespace ImGuiScene
     /// </summary>
     public class ImGui_Impl_DX11 : IImGuiRenderer
     {
-        private IntPtr _renderNamePtr = IntPtr.Zero;
-        private Device _device = null;
-        private DeviceContext _deviceContext = null;
-        private ShaderResourceView _fontResourceView = null;
-        private SamplerState _fontSampler = null;
-        private VertexShader _vertexShader = null;
-        private PixelShader _pixelShader = null;
-        private InputLayout _inputLayout = null;
-        private Buffer _vertexConstantBuffer = null;
-        private BlendState _blendState = null;
-        private RasterizerState _rasterizerState = null;
-        private DepthStencilState _depthStencilState = null;
-        private Buffer _vertexBuffer = null;
-        private Buffer _indexBuffer = null;
-        private int _vertexBufferSize = 0;
-        private int _indexBufferSize = 0;
+        private IntPtr _renderNamePtr;
+        private Device _device;
+        private DeviceContext _deviceContext;
+        private ShaderResourceView _fontResourceView;
+        private SamplerState _fontSampler;
+        private VertexShader _vertexShader;
+        private PixelShader _pixelShader;
+        private InputLayout _inputLayout;
+        private Buffer _vertexConstantBuffer;
+        private BlendState _blendState;
+        private RasterizerState _rasterizerState;
+        private DepthStencilState _depthStencilState;
+        private Buffer _vertexBuffer;
+        private Buffer _indexBuffer;
+        private int _vertexBufferSize;
+        private int _indexBufferSize;
         private VertexBufferBinding _vertexBinding;
         // so we don't make a temporary object every frame
         private RawColor4 _blendColor = new RawColor4(0, 0, 0, 0);   

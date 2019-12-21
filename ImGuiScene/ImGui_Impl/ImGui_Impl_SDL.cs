@@ -12,11 +12,11 @@ namespace ImGuiScene
     /// </summary>
     public class ImGui_Impl_SDL
     {
-        private static IntPtr _platformNamePtr = IntPtr.Zero;
+        private static IntPtr _platformNamePtr;
         private static IntPtr _sdlWindow;
         private static IntPtr[] _mouseCursors = new IntPtr[(int)ImGuiMouseCursor.COUNT];
         private static bool[] _mousePressed = new bool[3];
-        private static ulong _lastTime = 0;
+        private static ulong _lastTime;
 
         private delegate void SetClipboardTextDelegate(IntPtr userData, string text);
         private delegate string GetClipboardTextDelegate();

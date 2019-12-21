@@ -17,7 +17,7 @@ namespace ImGuiScene
     /// </summary>
     public class ImGui_Impl_OpenGL3 : IImGuiRenderer
     {
-        private IntPtr _renderNamePtr = IntPtr.Zero;
+        private IntPtr _renderNamePtr;
         private uint _vertHandle;
         private uint _fragHandle;
         private uint _shaderHandle;

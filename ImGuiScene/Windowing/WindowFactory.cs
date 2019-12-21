@@ -34,7 +34,7 @@ namespace ImGuiScene
         /// </summary>
         public bool Fullscreen;
         /// <summary>
-        /// An optional color key used to make any matching portion of the window's client area transparent.  For example, setting this to magenta will
+        /// An optional float[4] color key used to make any matching portion of the window's client area transparent.  For example, setting this to magenta will
         /// then make any area where you render magenta instead be fully transparent to the window(s) behind this one.
         /// Values are red, green, blue from 0 to 1.
         /// </summary>
