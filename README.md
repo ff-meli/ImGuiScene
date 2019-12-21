@@ -23,32 +23,15 @@ You may need to ensure "Prefer 32-bit" is disabled for your project if you use t
 
 
 ### Simple example application
-This is a simple example that creates a transparent ('hidden') fullscreen window that just renders the default ImGui demo window
+This is the simplest example, which just creates a transparent ('hidden') fullscreen window that renders the default ImGui demo window.  More control can be had by directly creating a SimpleImGuiScene from its constructor, and/or by modifying properties on the scene object.
 ```csharp
 static void Main(string[] args)
 {
-    using (var scene = new SimpleImGuiScene(RendererFactory.RendererBackend.DirectX11, new WindowCreateInfo
+    using (var scene = SimpleImGuiScene.CreateOverlay(RendererFactory.RendererBackend.DirectX11))
     {
-        Title = "Test Window",
-        Fullscreen = true,
-        TransparentColor = new float[] { 0, 0, 0 }
-    }))
-    {
-        scene.Window.OnSDLEvent += (ref SDL.SDL_Event sdlEvent) =>
-        {
-            if (sdlEvent.type == SDL.SDL_EventType.SDL_KEYDOWN && sdlEvent.key.keysym.scancode == SDL.SDL_Scancode.SDL_SCANCODE_ESCAPE)
-            {
-                scene.ShouldQuit = true;
-            }
-            return true;
-        };
-
-        scene.OnBuildUI += () =>
-        {
-            // Any ImGui code can be put here (or on other methods attached to OnBuildUI) and will work as expected
-            // Virtually all actual application logic will be inside these handlers
-            ImGui.ShowDemoWindow();
-        };
+        // Any ImGui code can be put into methods attached to OnBuildUI and will work as expected
+        // Virtually all actual application logic will be inside these handlers
+        scene.OnBuildUI += ImGui.ShowDemoWindow;
 
         scene.Run();
     }
