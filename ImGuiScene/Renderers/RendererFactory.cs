@@ -10,7 +10,8 @@ namespace ImGuiScene
         public enum RendererBackend
         {
             DirectX11,
-            OpenGL3
+            OpenGL3,
+            Vulkan
         }
 
         /// <summary>
@@ -28,6 +29,9 @@ namespace ImGuiScene
 
                 case RendererBackend.OpenGL3:
                     return new SimpleOGL3(enableDebugging);
+
+                case RendererBackend.Vulkan:
+                    return new SimpleVk(enableDebugging);
 
                 default:
                     throw new ArgumentException();

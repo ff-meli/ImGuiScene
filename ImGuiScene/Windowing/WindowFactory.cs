@@ -59,6 +59,9 @@ namespace ImGuiScene
                 case RendererFactory.RendererBackend.OpenGL3:
                     return new SDLWindowGL(renderer, createInfo);
 
+                case RendererFactory.RendererBackend.Vulkan:
+                    return new SDLWindowVk(renderer, createInfo);
+
                 default:
                     return new SimpleSDLWindow(renderer, createInfo);
             }
