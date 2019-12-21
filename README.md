@@ -33,6 +33,9 @@ static void Main(string[] args)
         // Virtually all actual application logic will be inside these handlers
         scene.OnBuildUI += ImGui.ShowDemoWindow;
 
+        // This blocks until a specified key is pressed.  Since we didn't override it in CreateOverlay(), it defaults to escape.
+        // You can alternatively call scene.Update() in a loop, but you are then responsible for checking quit conditions.
+        // Because this blocks, you will typically want to put your scene in a thread if you are using an injected application.
         scene.Run();
     }
 }
