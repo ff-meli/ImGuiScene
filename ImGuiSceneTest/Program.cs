@@ -1,6 +1,5 @@
 ﻿using ImGuiNET;
 using ImGuiScene;
-using static SDL2.SDL;
 
 namespace ImGuiSceneTest
 {
@@ -10,6 +9,8 @@ namespace ImGuiSceneTest
         {
             using (var scene = SimpleImGuiScene.CreateOverlay(RendererFactory.RendererBackend.DirectX11))
             {
+                scene.PauseWhenUnfocused = true;
+
                 scene.OnBuildUI += ImGui.ShowDemoWindow;
 
                 scene.Run();

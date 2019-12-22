@@ -14,6 +14,9 @@ namespace ImGuiScene
     /// </summary>
     public class SimpleD3D : IRenderer
     {
+        /// <summary>
+        /// The type (API/version) of this renderer
+        /// </summary>
         public RendererFactory.RendererBackend Type => RendererFactory.RendererBackend.DirectX11;
 
         private RawColor4 _clearColor;
@@ -32,6 +35,22 @@ namespace ImGuiScene
             }
         }
 
+        private int _vsyncFlag = 1;
+        /// <summary>
+        /// Whether or not the renderer should sync presentation to the monitor's refresh rate.
+        /// </summary>
+        public bool Vsync
+        {
+            get => _vsyncFlag == 1;
+            set
+            {
+                _vsyncFlag = value ? 1 : 0;
+            }
+        }
+
+        /// <summary>
+        /// Whether this renderer was created with debuggable state.
+        /// </summary>
         public bool Debuggable { get; }
 
         private Device _device;
@@ -109,7 +128,7 @@ namespace ImGuiScene
         /// </summary>
         public void Present()
         {
-            _swapChain.Present(1, PresentFlags.None);
+            _swapChain.Present(_vsyncFlag, PresentFlags.None);
         }
 
         /// <summary>
@@ -230,8 +249,8 @@ namespace ImGuiScene
         // hold onto this directly for easier dispose etc and in case we need it later
         private ShaderResourceView _resourceView = null;
 
-        public int Width { get; private set; }
-        public int Height { get; private set; }
+        public int Width { get; }
+        public int Height { get; }
         public IntPtr ImGuiHandle => (_resourceView == null) ? IntPtr.Zero : _resourceView.NativePointer;
 
         public D3DTextureWrap(ShaderResourceView texView, int width, int height)

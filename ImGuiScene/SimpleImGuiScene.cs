@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using static SDL2.SDL;
 using static SDL2.SDL_image;
 
@@ -17,17 +18,43 @@ namespace ImGuiScene
         /// <summary>
         /// The main application container window where we do all our rendering and input processing.
         /// </summary>
-        public SimpleSDLWindow Window { get; private set; }
+        public SimpleSDLWindow Window { get; }
 
         /// <summary>
         /// The renderer backend being used to render into this window.
         /// </summary>
-        public IRenderer Renderer { get; private set; }
+        public IRenderer Renderer { get; }
 
         /// <summary>
         /// Whether the user application has requested the system to terminate.
         /// </summary>
         public bool ShouldQuit { get; set; } = false;
+
+        private FramerateLimit _framerateLimit;
+        /// <summary>
+        /// The method of framerate control used by the scene and renderer.
+        /// The default behavior is <see cref="FramerateLimit.LimitType.Vsync"/>, which is greatly recommended unless you have a specific need to change it.
+        /// </summary>
+        public FramerateLimit FramerateLimit
+        {
+            get => _framerateLimit;
+            set
+            {
+                _framerateLimit = value;
+                Renderer.Vsync = _framerateLimit.Type == FramerateLimit.LimitType.Vsync ? true : false;
+
+                if (_framerateLimit.Type == FramerateLimit.LimitType.FixedFPS)
+                {
+                    _isFramerateLimited = true;
+                    // convert to ms here since that is what Sleep() uses
+                    _targetFrameTime = 1000.0 / _framerateLimit.FPS;
+                }
+                else
+                {
+                    _isFramerateLimited = false;
+                }
+            }
+        }
 
         public delegate void BuildUIDelegate();
 
@@ -35,6 +62,37 @@ namespace ImGuiScene
         /// User methods invoked every ImGui frame to construct custom UIs.
         /// </summary>
         public BuildUIDelegate OnBuildUI;
+
+        private bool _pauseWhenUnfocused;
+        /// <summary>
+        /// Whether rendering should be paused when the window is not active.  Window events will still be processed.
+        /// This should help reduce processing when the overlay is not the focus, but obviously cannot be used
+        /// if you are rendering dynamic data.
+        /// </summary>
+        public bool PauseWhenUnfocused
+        {
+            get => _pauseWhenUnfocused;
+            set
+            {
+                _pauseWhenUnfocused = value;
+                if (_pauseWhenUnfocused)
+                {
+                    OnSDLEvent += FocusHandler;
+                } else
+                {
+                    OnSDLEvent -= FocusHandler;
+                }
+            }
+        }
+
+        // framerate limiting
+        // many of these could be inferred or computed, but are cached to avoid unnecessary
+        // processing in the render loop
+        private bool _isFramerateLimited;
+        private double _targetFrameTime;
+        private ulong _lastFrameCounter;
+        private readonly double _msPerTick;
+        private FramerateLimit _savedFrameLimit;
 
         /// <summary>
         /// Delegate for providing user event handler methods that want to respond to SDL_Events.
@@ -47,6 +105,7 @@ namespace ImGuiScene
         }
 
         private List<IDisposable> _allocatedResources = new List<IDisposable>();
+        private bool _pauseRendering;
 
         /// <summary>
         /// Helper method to create a fullscreen transparent overlay that exits when pressing the specified key.
@@ -71,10 +130,7 @@ namespace ImGuiScene
                 if (sdlEvent.type == SDL_EventType.SDL_KEYDOWN && sdlEvent.key.keysym.scancode == closeOverlayKey)
                 {
                     scene.ShouldQuit = true;
-                    return true;
                 }
-
-                return false;
             };
 
             return scene;
@@ -88,8 +144,15 @@ namespace ImGuiScene
         /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
         public SimpleImGuiScene(RendererFactory.RendererBackend rendererBackend, WindowCreateInfo createInfo, bool enableRenderDebugging = false)
         {
+            // cache this off since it should hopefully never change
+            // inverted and *1000 to reduce math in the render loop to compute frame times in ms at the loss of a tiny bit of precision
+            _msPerTick = 1000.0 / SDL_GetPerformanceFrequency();
+
             Renderer = RendererFactory.CreateRenderer(rendererBackend, enableRenderDebugging);
             Window = WindowFactory.CreateForRenderer(Renderer, createInfo);
+
+            // This is the default beahvior anyway, but manually creating the object simplifies some checks
+            FramerateLimit = new FramerateLimit(FramerateLimit.LimitType.Vsync);
 
             ImGui.CreateContext();
 
@@ -171,20 +234,42 @@ namespace ImGuiScene
         /// </summary>
         public void Update()
         {
+            var frameStart = SDL_GetPerformanceCounter();
+            // var fps = 1000.0 / ((frameStart - _lastFrameCounter) * _msPerTick);
+            _lastFrameCounter = frameStart;
+
             Window.ProcessEvents();
 
-            Renderer.ImGui_NewFrame();
-            ImGui_Impl_SDL.NewFrame();
+            if (!_pauseRendering)
+            {
+                Renderer.ImGui_NewFrame();
+                ImGui_Impl_SDL.NewFrame();
 
-            ImGui.NewFrame();
-                OnBuildUI?.Invoke();
-            ImGui.Render();
+                ImGui.NewFrame();
+                    OnBuildUI?.Invoke();
+                ImGui.Render();
 
-            Renderer.Clear();
+                Renderer.Clear();
 
-            Renderer.ImGui_RenderDrawData(ImGui.GetDrawData());
+                Renderer.ImGui_RenderDrawData(ImGui.GetDrawData());
 
-            Renderer.Present();
+                Renderer.Present();
+            }
+
+            if (_isFramerateLimited)
+            {
+                var frameTime = (double)(SDL_GetPerformanceCounter() - frameStart) * _msPerTick;
+
+                // This is somewhat less precise than looping over a Sleep(0) and updating frameTime until we pass _targetFrameTime
+                // but that method generally results in 'apparent' higher cpu, which somewhat defeats the purpose
+                // In reality, it would yield if necessary, but I don't want to handle complaints that cpu usage appears to
+                // go up when we render less often.  Our rendering is trivial enough that all the imprecisions in timing won't matter.
+                var sleepTime = _targetFrameTime - frameTime;
+                if (sleepTime > 0)
+                {
+                    Thread.Sleep((int)sleepTime);
+                }
+            }
         }
 
         /// <summary>
@@ -198,6 +283,38 @@ namespace ImGuiScene
             while (!Window.WantsClose && !ShouldQuit)
             {
                 Update();
+            }
+        }
+
+        private void FocusHandler(ref SDL_Event sdlEvent)
+        {
+            if (!PauseWhenUnfocused)
+                return;
+
+            if (sdlEvent.type == SDL_EventType.SDL_WINDOWEVENT)
+            {
+                if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST)
+                {
+                    _pauseRendering = true;
+                    // Manually limit updating if we are paused
+                    // otherwise cpu usage can spike crazily as the update loop just spins super fast
+                    if (FramerateLimit.Type != FramerateLimit.LimitType.FixedFPS)
+                    {
+                        _savedFrameLimit = FramerateLimit;
+                        // for now cap to 60.  This is somewhat arbitrary but should allow responsive window re-focus
+                        // and seems to drop cpu to effectively 0
+                        FramerateLimit = new FramerateLimit(FramerateLimit.LimitType.FixedFPS, 60);
+                    }
+                }
+                else if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED)
+                {
+                    _pauseRendering = false;
+                    if (_savedFrameLimit != null)
+                    {
+                        FramerateLimit = _savedFrameLimit;
+                        _savedFrameLimit = null;
+                    }
+                }
             }
         }
 
@@ -230,10 +347,7 @@ namespace ImGuiScene
                 IMG_Quit();
 
                 Renderer?.Dispose();
-                Renderer = null;
-
                 Window?.Dispose();
-                Window = null;
 
                 disposedValue = true;
             }

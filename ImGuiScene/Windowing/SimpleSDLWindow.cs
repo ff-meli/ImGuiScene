@@ -30,12 +30,12 @@ namespace ImGuiScene
             return ((uint)(r * 255.0f)) | ((uint)(g * 255.0f) << 8) | ((uint)(b * 255.0f) << 16);
         }
 
-        public delegate bool ProcessEventDelegate(ref SDL_Event sdlEvent);
+        public delegate void ProcessEventDelegate(ref SDL_Event sdlEvent);
 
         /// <summary>
         /// The SDL_Window pointer for this window.
         /// </summary>
-        public IntPtr Window { get; private set; }
+        public IntPtr Window { get; }
 
         /// <summary>
         /// Whether an event has closed this window.
@@ -195,7 +195,6 @@ namespace ImGuiScene
                 if (Window != IntPtr.Zero)
                 {
                     SDL_DestroyWindow(Window);
-                    Window = IntPtr.Zero;
                 }
 
                 SDL_Quit();

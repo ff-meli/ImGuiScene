@@ -11,14 +11,19 @@ namespace ImGuiScene
     public interface IRenderer : IDisposable
     {
         /// <summary>
-        /// The type (API/version) of this renderer
+        /// The type (API/version) of this renderer.
         /// </summary>
         RendererFactory.RendererBackend Type { get; }
 
         /// <summary>
-        /// The color to use when clearing the window
+        /// The color to use when clearing the window.
         /// </summary>
         Vector4 ClearColor { get; set; }
+
+        /// <summary>
+        /// Whether or not the renderer should sync presentation to the monitor's refresh rate.
+        /// </summary>
+        bool Vsync { get; set; }
 
         /// <summary>
         /// Whether this renderer was created with debuggable state.

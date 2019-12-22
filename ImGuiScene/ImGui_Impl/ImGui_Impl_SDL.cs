@@ -41,7 +41,7 @@ namespace ImGuiScene
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         // If you have multiple SDL events and some of them are not meant to be used by dear imgui, you may need to filter events based on their windowID field.
-        public static bool ProcessEvent(ref SDL_Event sdlEvent)
+        public static void ProcessEvent(ref SDL_Event sdlEvent)
         {
             var io = ImGui.GetIO();
 
@@ -52,13 +52,13 @@ namespace ImGuiScene
                     if (sdlEvent.wheel.x < 0) io.MouseWheelH -= 1f;
                     if (sdlEvent.wheel.y > 0) io.MouseWheel += 1f;
                     if (sdlEvent.wheel.y < 0) io.MouseWheel -= 1f;
-                    return true;
+                    break;
 
                 case SDL_EventType.SDL_MOUSEBUTTONDOWN:
                     if (sdlEvent.button.button == SDL_BUTTON_LEFT) _mousePressed[0] = true;
                     if (sdlEvent.button.button == SDL_BUTTON_RIGHT) _mousePressed[1] = true;
                     if (sdlEvent.button.button == SDL_BUTTON_MIDDLE) _mousePressed[2] = true;
-                    return true;
+                    break;
 
                 case SDL_EventType.SDL_TEXTINPUT:
                     byte[] byteCopy;
@@ -80,7 +80,7 @@ namespace ImGuiScene
                         }
                     }
                     io.AddInputCharactersUTF8(Encoding.UTF8.GetString(byteCopy));
-                    return true;
+                    break;
 
                 case SDL_EventType.SDL_KEYDOWN:
                 case SDL_EventType.SDL_KEYUP:
@@ -90,9 +90,8 @@ namespace ImGuiScene
                     io.KeyCtrl = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_CTRL) != 0;
                     io.KeyAlt = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_ALT) != 0;
                     io.KeySuper = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_GUI) != 0;
-                    return true;
+                    break;
             }
-            return false;
         }
 
         public static bool Init(IntPtr sdlWindow)

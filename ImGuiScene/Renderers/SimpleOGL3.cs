@@ -13,6 +13,9 @@ namespace ImGuiScene
         public int ContextMajorVersion => 3;
         public int ContextMinorVersion => 2;
 
+        /// <summary>
+        /// The type (API/version) of this renderer
+        /// </summary>
         public RendererFactory.RendererBackend Type => RendererFactory.RendererBackend.OpenGL3;
 
         private Vector4 _clearColor;
@@ -28,6 +31,26 @@ namespace ImGuiScene
             }
         }
 
+        private bool _vsync = true;
+        /// <summary>
+        /// Whether or not the renderer should sync presentation to the monitor's refresh rate.
+        /// </summary>
+        public bool Vsync
+        {
+            get => _vsync;
+            set
+            {
+                _vsync = value;
+                if (_glContext != IntPtr.Zero)
+                {
+                    SDL_GL_SetSwapInterval(_vsync ? 1 : 0);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether this renderer was created with debuggable state.
+        /// </summary>
         public bool Debuggable { get; }
 
         private ImGui_Impl_OpenGL3 _backend = new ImGui_Impl_OpenGL3();
@@ -71,8 +94,7 @@ namespace ImGuiScene
 
             _glContext = SDL_GL_CreateContext(sdlWindow.Window);
             SDL_GL_MakeCurrent(sdlWindow.Window, _glContext);
-            // vsync
-            SDL_GL_SetSwapInterval(1);
+            SDL_GL_SetSwapInterval(Vsync ? 1 : 0);
 
             // because duplicating logic is always exciting
             // This doesn't (shouldn't?) create an actual additional gl context, but is necessary for OpenGl.NET Gl.* commands to work
@@ -208,9 +230,9 @@ namespace ImGuiScene
     /// </summary>
     public class GLTextureWrap : TextureWrap
     {
-        public IntPtr ImGuiHandle { get; private set; }
-        public int Width { get; private set; }
-        public int Height { get; private set; }
+        public IntPtr ImGuiHandle { get; }
+        public int Width { get; }
+        public int Height { get; }
 
         public GLTextureWrap(uint texture, int width, int height)
         {
@@ -238,7 +260,6 @@ namespace ImGuiScene
                 if (textureId != 0)
                 {
                     Gl.DeleteTextures(textureId);
-                    ImGuiHandle = (IntPtr)0;
                 }
 
                 disposedValue = true;
