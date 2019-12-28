@@ -52,6 +52,7 @@
     <Compile Include="FramerateLimit.cs" />
     <Compile Include="ImGui_Impl\IImGuiRenderer.cs" />
     <Compile Include="ImGui_Impl\ImGui_Impl_OpenGL3.cs" />
+    <Compile Include="RawDX11Scene.cs" />
     <Compile Include="Renderers\IRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ImGui_Impl\ImGui_Impl_DX11.cs" />
