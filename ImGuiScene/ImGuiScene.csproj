@@ -24,6 +24,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,6 +41,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -49,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormatUtils.cs" />
     <Compile Include="FramerateLimit.cs" />
     <Compile Include="ImGui_Impl\IImGuiRenderer.cs" />
     <Compile Include="ImGui_Impl\ImGui_Impl_OpenGL3.cs" />
@@ -66,13 +69,13 @@
     <Compile Include="Windowing\SimpleSDLWindow.cs" />
     <EmbeddedResource Include="resources\shaders\imgui-frag.hlsl.bytes" LogicalName="imgui-frag.hlsl.bytes" />
     <EmbeddedResource Include="resources\shaders\imgui-vertex.hlsl.bytes" LogicalName="imgui-vertex.hlsl.bytes" />
+    <EmbeddedResource Include="resources\shaders\copy-ps.hlsl.bytes" LogicalName="copy-ps.hlsl.bytes" />
+    <EmbeddedResource Include="resources\shaders\fullscreen-vs.hlsl.bytes" LogicalName="fullscreen-vs.hlsl.bytes" />
     <EmbeddedResource Include="resources\shaders\imgui-frag.glsl" LogicalName="imgui-frag.glsl" />
     <EmbeddedResource Include="resources\shaders\imgui-vertex.glsl" LogicalName="imgui-vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
-    <Content Include="resources\shaders\imgui-frag.hlsl" />
-    <Content Include="resources\shaders\imgui-vertex.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\deps\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj">
