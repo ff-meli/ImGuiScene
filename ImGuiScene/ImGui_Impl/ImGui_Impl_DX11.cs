@@ -41,7 +41,88 @@ namespace ImGuiScene
         private int _indexBufferSize;
         private VertexBufferBinding _vertexBinding;
         // so we don't make a temporary object every frame
-        private RawColor4 _blendColor = new RawColor4(0, 0, 0, 0);   
+        private RawColor4 _blendColor = new RawColor4(0, 0, 0, 0);
+
+        private struct StateBackup
+        {
+            public Rectangle[] ScissorRects;
+            public RawViewportF[] Viewports;
+            public RasterizerState RS;
+            public BlendState BlendState;
+            public RawColor4 BlendFactor;
+            public int SampleMask;
+            public DepthStencilState DepthStencilState;
+            public int DepthStencilRef;
+            public ShaderResourceView[] PSShaderResource;
+            public SamplerState[] PSSampler;
+            public PixelShader PS;
+            public VertexShader VS;
+            public GeometryShader GS;
+            public Buffer[] VSConstantBuffer;
+            public PrimitiveTopology PrimitiveTopology;
+            public Buffer IndexBuffer;
+            public Format IndexBufferFormat;
+            public int IndexBufferOffset;
+            public Buffer[] VertexBuffer;
+            public int[] VertexBufferStride;
+            public int[] VertexBufferOffset;
+            public InputLayout InputLayout;
+        }
+
+        private StateBackup BackupRenderState()
+        {
+            var backup = new StateBackup();
+            backup.ScissorRects = new Rectangle[16];
+            backup.Viewports = new RawViewportF[16];
+            backup.VertexBuffer = new Buffer[1];
+            backup.VertexBufferStride = new int[1];
+            backup.VertexBufferOffset = new int[1];
+
+            _deviceContext.Rasterizer.GetScissorRectangles<Rectangle>(backup.ScissorRects);
+            _deviceContext.Rasterizer.GetViewports<RawViewportF>(backup.Viewports);
+            backup.RS = _deviceContext.Rasterizer.State;
+            backup.BlendState = _deviceContext.OutputMerger.BlendState;
+            backup.BlendFactor = _deviceContext.OutputMerger.BlendFactor;
+            backup.SampleMask = _deviceContext.OutputMerger.BlendSampleMask;
+            backup.DepthStencilState = _deviceContext.OutputMerger.DepthStencilState;
+            backup.DepthStencilRef = _deviceContext.OutputMerger.DepthStencilReference;
+            backup.PSShaderResource = _deviceContext.PixelShader.GetShaderResources(0, 1);
+            backup.PSSampler = _deviceContext.PixelShader.GetSamplers(0, 1);
+            backup.PS = _deviceContext.PixelShader.Get();
+            backup.VS = _deviceContext.VertexShader.Get();
+            backup.VSConstantBuffer = _deviceContext.VertexShader.GetConstantBuffers(0, 1);
+            backup.GS = _deviceContext.GeometryShader.Get();
+
+            backup.PrimitiveTopology = _deviceContext.InputAssembler.PrimitiveTopology;
+            _deviceContext.InputAssembler.GetIndexBuffer(out backup.IndexBuffer, out backup.IndexBufferFormat, out backup.IndexBufferOffset);
+            _deviceContext.InputAssembler.GetVertexBuffers(0, 1, backup.VertexBuffer, backup.VertexBufferStride, backup.VertexBufferOffset);
+            backup.InputLayout = _deviceContext.InputAssembler.InputLayout;
+
+            return backup;
+        }
+
+        private void RestoreRenderState(ref StateBackup oldState)
+        {
+            _deviceContext.Rasterizer.SetScissorRectangles(oldState.ScissorRects);
+            _deviceContext.Rasterizer.SetViewports(oldState.Viewports, oldState.Viewports.Length);
+            _deviceContext.Rasterizer.State = oldState.RS;
+            _deviceContext.OutputMerger.BlendState = oldState.BlendState;
+            _deviceContext.OutputMerger.BlendFactor = oldState.BlendFactor;
+            _deviceContext.OutputMerger.BlendSampleMask = oldState.SampleMask;
+            _deviceContext.OutputMerger.DepthStencilState = oldState.DepthStencilState;
+            _deviceContext.OutputMerger.DepthStencilReference = oldState.DepthStencilRef;
+            _deviceContext.PixelShader.SetShaderResource(0, oldState.PSShaderResource[0]);
+            _deviceContext.PixelShader.SetSampler(0, oldState.PSSampler[0]);
+            _deviceContext.PixelShader.Set(oldState.PS);
+            _deviceContext.VertexShader.Set(oldState.VS);
+            _deviceContext.VertexShader.SetConstantBuffer(0, oldState.VSConstantBuffer[0]);
+            _deviceContext.GeometryShader.Set(oldState.GS);
+
+            _deviceContext.InputAssembler.PrimitiveTopology = oldState.PrimitiveTopology;
+            _deviceContext.InputAssembler.SetIndexBuffer(oldState.IndexBuffer, oldState.IndexBufferFormat, oldState.IndexBufferOffset);
+            _deviceContext.InputAssembler.SetVertexBuffers(0, oldState.VertexBuffer, oldState.VertexBufferStride, oldState.VertexBufferOffset);
+            _deviceContext.InputAssembler.InputLayout = oldState.InputLayout;
+        }
 
         public void SetupRenderState(ImDrawDataPtr drawData)
         {
@@ -174,6 +255,8 @@ namespace ImGuiScene
             }
             _deviceContext.UnmapSubresource(_vertexConstantBuffer, 0);
 
+            var oldState = BackupRenderState();
+
             // Setup desired DX state
             SetupRenderState(drawData);
 
@@ -203,13 +286,15 @@ namespace ImGuiScene
                         // rather than just always using the font sampler
                         var textureSrv = ShaderResourceView.FromPointer<ShaderResourceView>(pcmd.TextureId);
                         _deviceContext.PixelShader.SetShaderResource(0, textureSrv);
-                        _deviceContext.DrawIndexed((int)pcmd.ElemCount, (int)(pcmd.IdxOffset + indexOffset), (int)(pcmd.VtxOffset + vertexOffset)); 
+                        _deviceContext.DrawIndexed((int)pcmd.ElemCount, (int)(pcmd.IdxOffset + indexOffset), (int)(pcmd.VtxOffset + vertexOffset));
                     }
                 }
 
                 indexOffset += cmdList.IdxBuffer.Size;
                 vertexOffset += cmdList.VtxBuffer.Size;
             }
+
+            RestoreRenderState(ref oldState);
         }
 
         public void CreateFontsTexture()
@@ -233,7 +318,7 @@ namespace ImGuiScene
                 CpuAccessFlags = CpuAccessFlags.None,
                 OptionFlags = ResourceOptionFlags.None
             };
-                
+
             using (var fontTexture = new Texture2D(_device, texDesc, new DataRectangle(fontPixels, fontWidth * fontBytesPerPixel)))
             {
                 // Create texture view
@@ -344,7 +429,7 @@ namespace ImGuiScene
                 DepthWriteMask = DepthWriteMask.All,
                 DepthComparison = Comparison.Always,
                 IsStencilEnabled = false,
-                FrontFace = 
+                FrontFace =
                 {
                     FailOperation = StencilOperation.Keep,
                     DepthFailOperation = StencilOperation.Keep,
