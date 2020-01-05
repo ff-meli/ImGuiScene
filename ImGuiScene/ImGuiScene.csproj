@@ -51,7 +51,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FormatUtils.cs" />
     <Compile Include="FramerateLimit.cs" />
     <Compile Include="ImGui_Impl\IImGuiRenderer.cs" />
     <Compile Include="ImGui_Impl\ImGui_Impl_OpenGL3.cs" />
@@ -62,6 +61,9 @@
     <Compile Include="ImGui_Impl\ImGui_Impl_DX11.cs" />
     <Compile Include="ImGui_Impl\ImGui_Impl_SDL.cs" />
     <Compile Include="Renderers\RendererFactory.cs" />
+    <Compile Include="Win32 Utils\Cursors.cs" />
+    <Compile Include="Win32 Utils\VirtualKeys.cs" />
+    <Compile Include="Win32 Utils\WindowsMessage.cs" />
     <Compile Include="Windowing\WindowFactory.cs" />
     <Compile Include="Windowing\SDLWindowGL.cs" />
     <Compile Include="Renderers\SimpleD3D.cs" />
