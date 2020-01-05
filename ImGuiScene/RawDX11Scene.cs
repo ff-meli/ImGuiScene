@@ -17,6 +17,9 @@ namespace ImGuiScene
         private SwapChain _swapChain;
         private DeviceContext _deviceContext;
         private RenderTargetView rtv;
+        private IntPtr hWnd;
+        private int targetWidth;
+        private int targetHeight;
 
         private ImGui_Impl_DX11 _impl;
 
@@ -60,12 +63,20 @@ namespace ImGuiScene
                 rtv = new RenderTargetView(_device, bb);
             }
 
+            // could also do things with GetClientRect() for hWnd, not sure if that is necessary
+            targetWidth = _swapChain.Description.ModeDescription.Width;
+            targetHeight = _swapChain.Description.ModeDescription.Height;
+
+            hWnd = _swapChain.Description.OutputHandle;
+
             InitializeImGui();
         }
 
         public void Dispose()
         {
             _impl.Shutdown();
+            ImGui_Input_Impl_Direct.Shutdown();
+
             ImGui.DestroyContext();
 
             rtv.Dispose();
@@ -77,6 +88,7 @@ namespace ImGuiScene
 
             ImGui.CreateContext();
 
+            ImGui_Input_Impl_Direct.Init(hWnd);
             _impl.Init(_device, _deviceContext);
         }
 
@@ -85,12 +97,9 @@ namespace ImGuiScene
             _deviceContext.OutputMerger.SetRenderTargets(rtv);
 
             _impl.NewFrame();
-
-            ImGui.GetIO().DisplaySize.X = 1920;
-            ImGui.GetIO().DisplaySize.Y = 1080;
-            ImGui.GetIO().DisplayFramebufferScale.X = 1f;
-            ImGui.GetIO().DisplayFramebufferScale.Y = 1f;
-            ImGui.GetIO().DeltaTime = 1f / 60;
+            // could (should?) grab size every frame, or ideally handle resize somehow (we probably crash now)
+            // but as long as we pretend we don't resize, this should be fine
+            ImGui_Input_Impl_Direct.NewFrame(targetWidth, targetHeight);
 
             ImGui.NewFrame();
             OnBuildUI?.Invoke();
