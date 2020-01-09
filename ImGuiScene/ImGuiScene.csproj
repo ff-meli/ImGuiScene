@@ -61,9 +61,8 @@
     <Compile Include="ImGui_Impl\ImGui_Impl_DX11.cs" />
     <Compile Include="ImGui_Impl\ImGui_Impl_SDL.cs" />
     <Compile Include="Renderers\RendererFactory.cs" />
-    <Compile Include="Win32 Utils\Cursors.cs" />
-    <Compile Include="Win32 Utils\VirtualKeys.cs" />
-    <Compile Include="Win32 Utils\WindowsMessage.cs" />
+    <Compile Include="Win32 Utils\Constants.cs" />
+    <Compile Include="Win32 Utils\Win32.cs" />
     <Compile Include="Windowing\WindowFactory.cs" />
     <Compile Include="Windowing\SDLWindowGL.cs" />
     <Compile Include="Renderers\SimpleD3D.cs" />
@@ -72,8 +71,6 @@
     <Compile Include="Windowing\SimpleSDLWindow.cs" />
     <EmbeddedResource Include="resources\shaders\imgui-frag.hlsl.bytes" LogicalName="imgui-frag.hlsl.bytes" />
     <EmbeddedResource Include="resources\shaders\imgui-vertex.hlsl.bytes" LogicalName="imgui-vertex.hlsl.bytes" />
-    <EmbeddedResource Include="resources\shaders\copy-ps.hlsl.bytes" LogicalName="copy-ps.hlsl.bytes" />
-    <EmbeddedResource Include="resources\shaders\fullscreen-vs.hlsl.bytes" LogicalName="fullscreen-vs.hlsl.bytes" />
     <EmbeddedResource Include="resources\shaders\imgui-frag.glsl" LogicalName="imgui-frag.glsl" />
     <EmbeddedResource Include="resources\shaders\imgui-vertex.glsl" LogicalName="imgui-vertex.glsl" />
   </ItemGroup>

@@ -1,7 +1,6 @@
 ﻿using ImGuiNET;
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ImGuiScene
@@ -10,45 +9,7 @@ namespace ImGuiScene
     // and wndproc hooking
     public static class ImGui_Input_Impl_Direct
     {
-        [StructLayout(LayoutKind.Sequential)]
-        public struct POINT
-        {
-            public int X;
-            public int Y;
-        }
-
-        [DllImport("user32.dll")]
-        public static extern bool GetCursorPos(out POINT lpPoint);
-        [DllImport("user32.dll")]
-        static extern bool SetCursorPos(int x, int y);
-        [DllImport("user32.dll")]
-        static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
-        [DllImport("user32.dll")]
-        static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
-        [DllImport("user32.dll")]
-        static extern IntPtr GetCapture();
-        [DllImport("user32.dll")]
-        static extern IntPtr SetCapture(IntPtr hWnd);
-        [DllImport("user32.dll")]
-        static extern bool ReleaseCapture();
-        [DllImport("user32.dll")]
-        static extern short GetKeyState(int nVirtKey);
-        [DllImport("user32.dll")]
-        static extern IntPtr GetCursor();
-        [DllImport("user32.dll")]
-        public static extern IntPtr SetCursor(IntPtr handle);
-        [DllImport("user32.dll")]
-        static extern IntPtr LoadCursor(IntPtr hInstance, int lpCursorName);
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-        const int GWLP_WNDPROC = -4;
-
-        [DllImport("user32.dll")]
-        static extern long CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint Msg, ulong wParam, long lParam);
-
         delegate long WndProcDelegate(IntPtr hWnd, uint msg, ulong wParam, long lParam);
-
 
         private static long _lastTime;
         private static IntPtr _platformNamePtr;
@@ -66,7 +27,7 @@ namespace ImGuiScene
             // have to hold onto the delegate to keep it in memory for unmanaged code
             _wndProcDelegate = WndProcDetour;
             _wndProcPtr = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate);
-            _oldWndProcPtr = SetWindowLongPtr(_hWnd, GWLP_WNDPROC, _wndProcPtr);
+            _oldWndProcPtr = Win32.SetWindowLongPtr(_hWnd, WindowLongType.GWL_WNDPROC, _wndProcPtr);
 
             var io = ImGui.GetIO();
 
@@ -80,35 +41,35 @@ namespace ImGuiScene
 
             io.ImeWindowHandle = _hWnd;
 
-            io.KeyMap[(int)ImGuiKey.Tab] = (int)VirtualKeys.Tab;
-            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)VirtualKeys.Left;
-            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)VirtualKeys.Right;
-            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)VirtualKeys.Up;
-            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)VirtualKeys.Down;
-            io.KeyMap[(int)ImGuiKey.PageUp] = (int)VirtualKeys.Prior;
-            io.KeyMap[(int)ImGuiKey.PageDown] = (int)VirtualKeys.Next;
-            io.KeyMap[(int)ImGuiKey.Home] = (int)VirtualKeys.Home;
-            io.KeyMap[(int)ImGuiKey.End] = (int)VirtualKeys.End;
-            io.KeyMap[(int)ImGuiKey.Insert] = (int)VirtualKeys.Insert;
-            io.KeyMap[(int)ImGuiKey.Delete] = (int)VirtualKeys.Delete;
-            io.KeyMap[(int)ImGuiKey.Backspace] = (int)VirtualKeys.Back;
-            io.KeyMap[(int)ImGuiKey.Space] = (int)VirtualKeys.Space;
-            io.KeyMap[(int)ImGuiKey.Enter] = (int)VirtualKeys.Return;
-            io.KeyMap[(int)ImGuiKey.Escape] = (int)VirtualKeys.Escape;
-            io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)VirtualKeys.Return; // same keycode, lparam is different.  Not sure if this will cause dupe events or not
-            io.KeyMap[(int)ImGuiKey.A] = (int)VirtualKeys.A;
-            io.KeyMap[(int)ImGuiKey.C] = (int)VirtualKeys.C;
-            io.KeyMap[(int)ImGuiKey.V] = (int)VirtualKeys.V;
-            io.KeyMap[(int)ImGuiKey.X] = (int)VirtualKeys.X;
-            io.KeyMap[(int)ImGuiKey.Y] = (int)VirtualKeys.Y;
-            io.KeyMap[(int)ImGuiKey.Z] = (int)VirtualKeys.Z;
+            io.KeyMap[(int)ImGuiKey.Tab] = (int)VirtualKey.Tab;
+            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)VirtualKey.Left;
+            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)VirtualKey.Right;
+            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)VirtualKey.Up;
+            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)VirtualKey.Down;
+            io.KeyMap[(int)ImGuiKey.PageUp] = (int)VirtualKey.Prior;
+            io.KeyMap[(int)ImGuiKey.PageDown] = (int)VirtualKey.Next;
+            io.KeyMap[(int)ImGuiKey.Home] = (int)VirtualKey.Home;
+            io.KeyMap[(int)ImGuiKey.End] = (int)VirtualKey.End;
+            io.KeyMap[(int)ImGuiKey.Insert] = (int)VirtualKey.Insert;
+            io.KeyMap[(int)ImGuiKey.Delete] = (int)VirtualKey.Delete;
+            io.KeyMap[(int)ImGuiKey.Backspace] = (int)VirtualKey.Back;
+            io.KeyMap[(int)ImGuiKey.Space] = (int)VirtualKey.Space;
+            io.KeyMap[(int)ImGuiKey.Enter] = (int)VirtualKey.Return;
+            io.KeyMap[(int)ImGuiKey.Escape] = (int)VirtualKey.Escape;
+            io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)VirtualKey.Return; // same keycode, lparam is different.  Not sure if this will cause dupe events or not
+            io.KeyMap[(int)ImGuiKey.A] = (int)VirtualKey.A;
+            io.KeyMap[(int)ImGuiKey.C] = (int)VirtualKey.C;
+            io.KeyMap[(int)ImGuiKey.V] = (int)VirtualKey.V;
+            io.KeyMap[(int)ImGuiKey.X] = (int)VirtualKey.X;
+            io.KeyMap[(int)ImGuiKey.Y] = (int)VirtualKey.Y;
+            io.KeyMap[(int)ImGuiKey.Z] = (int)VirtualKey.Z;
         }
 
         public static void Shutdown()
         {
             if (_oldWndProcPtr != IntPtr.Zero)
             {
-                SetWindowLongPtr(_hWnd, GWLP_WNDPROC, _oldWndProcPtr);
+                Win32.SetWindowLongPtr(_hWnd, WindowLongType.GWL_WNDPROC, _oldWndProcPtr);
             }
 
             if (_platformNamePtr != IntPtr.Zero)
@@ -138,9 +99,9 @@ namespace ImGuiScene
             io.DeltaTime = _lastTime > 0 ? (float)((double)(currentTime - _lastTime) / frequency) : 1f / 60;
             _lastTime = currentTime;
 
-            io.KeyCtrl = (GetKeyState((int)VirtualKeys.Control) & 0x8000) != 0;
-            io.KeyShift = (GetKeyState((int)VirtualKeys.Shift) & 0x8000) != 0;
-            io.KeyAlt = (GetKeyState((int)VirtualKeys.Menu) & 0x8000) != 0;
+            io.KeyCtrl = (Win32.GetKeyState(VirtualKey.Control) & 0x8000) != 0;
+            io.KeyShift = (Win32.GetKeyState(VirtualKey.Shift) & 0x8000) != 0;
+            io.KeyAlt = (Win32.GetKeyState(VirtualKey.Menu) & 0x8000) != 0;
             io.KeySuper = false;
 
             UpdateMousePos();
@@ -167,14 +128,14 @@ namespace ImGuiScene
 
             if (io.WantSetMousePos)
             {
-                var pos = new POINT { X = (int)io.MousePos.X, Y = (int)io.MousePos.Y };
-                ClientToScreen(_hWnd, ref pos);
-                SetCursorPos(pos.X, pos.Y);
+                var pos = new Win32.POINT { X = (int)io.MousePos.X, Y = (int)io.MousePos.Y };
+                Win32.ClientToScreen(_hWnd, ref pos);
+                Win32.SetCursorPos(pos.X, pos.Y);
             }
 
             //if (HWND active_window = ::GetForegroundWindow())
             //    if (active_window == g_hWnd || ::IsChild(active_window, g_hWnd))
-            if (GetCursorPos(out POINT pt) && ScreenToClient(_hWnd, ref pt))
+            if (Win32.GetCursorPos(out Win32.POINT pt) && Win32.ScreenToClient(_hWnd, ref pt))
             {
                 io.MousePos.X = pt.X;
                 io.MousePos.Y = pt.Y;
@@ -197,78 +158,51 @@ namespace ImGuiScene
             var cur = ImGui.GetMouseCursor();
             if (cur == ImGuiMouseCursor.None || io.MouseDrawCursor)
             {
-                SetCursor(IntPtr.Zero);
+                Win32.SetCursor(IntPtr.Zero);
             }
             else
             {
-                var win32Cur = (int)Cursors.IDC_ARROW;
+                var win32Cur = Cursor.IDC_ARROW;
                 switch (cur)
                 {
                     case ImGuiMouseCursor.Arrow:
-                        win32Cur = (int)Cursors.IDC_ARROW;
+                        win32Cur = Cursor.IDC_ARROW;
                         break;
 
                     case ImGuiMouseCursor.TextInput:
-                        win32Cur = (int)Cursors.IDC_IBEAM;
+                        win32Cur = Cursor.IDC_IBEAM;
                         break;
 
                     case ImGuiMouseCursor.ResizeAll:
-                        win32Cur = (int)Cursors.IDC_SIZEALL;
+                        win32Cur = Cursor.IDC_SIZEALL;
                         break;
 
                     case ImGuiMouseCursor.ResizeEW:
-                        win32Cur = (int)Cursors.IDC_SIZEWE;
+                        win32Cur = Cursor.IDC_SIZEWE;
                         break;
 
                     case ImGuiMouseCursor.ResizeNS:
-                        win32Cur = (int)Cursors.IDC_SIZENS;
+                        win32Cur = Cursor.IDC_SIZENS;
                         break;
 
                     case ImGuiMouseCursor.ResizeNESW:
-                        win32Cur = (int)Cursors.IDC_SIZENESW;
+                        win32Cur = Cursor.IDC_SIZENESW;
                         break;
 
                     case ImGuiMouseCursor.ResizeNWSE:
-                        win32Cur = (int)Cursors.IDC_SIZENWSE;
+                        win32Cur = Cursor.IDC_SIZENWSE;
                         break;
 
                     case ImGuiMouseCursor.Hand:
-                        win32Cur = (int)Cursors.IDC_HAND;
+                        win32Cur = Cursor.IDC_HAND;
                         break;
                 }
 
-                SetCursor(LoadCursor(IntPtr.Zero, win32Cur));
+                Win32.SetCursor(Win32.LoadCursor(IntPtr.Zero, win32Cur));
             }
 
             return true;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static short HIWORD(ulong val)
-        {
-            return (short)(val >> 16);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static short LOWORD(ulong val)
-        {
-            return (short)(val & 0xFFFF);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static short GET_XBUTTON_WPARAM(ulong val)
-        {
-            return HIWORD(val);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static short GET_WHEEL_DELTA_WPARAM(ulong val)
-        {
-            return HIWORD(val);
-        }
-
-        const int WHEEL_DELTA = 120;
-        const int HTCLIENT = 1;
 
         private static long WndProcDetour(IntPtr hWnd, uint msg, ulong wParam, long lParam)
         {
@@ -305,12 +239,12 @@ namespace ImGuiScene
                             else if (wmsg == WindowsMessage.WM_XBUTTONDOWN || wmsg == WindowsMessage.WM_XBUTTONDBLCLK)
                             {
                                 // XBUTTON1 == 3
-                                button = GET_XBUTTON_WPARAM(wParam) == 1 ? 3 : 4;
+                                button = Win32.GET_XBUTTON_WPARAM(wParam) == 1 ? 3 : 4;
                             }
 
-                            if (!ImGui.IsAnyMouseDown() && GetCapture() == IntPtr.Zero)
+                            if (!ImGui.IsAnyMouseDown() && Win32.GetCapture() == IntPtr.Zero)
                             {
-                                SetCapture(hWnd);
+                                Win32.SetCapture(hWnd);
                             }
                             io.MouseDown[button] = true;
                             return 0;
@@ -339,12 +273,12 @@ namespace ImGuiScene
                             else if (wmsg == WindowsMessage.WM_XBUTTONUP)
                             {
                                 // XBUTTON1 == 3
-                                button = GET_XBUTTON_WPARAM(wParam) == 1 ? 3 : 4;
+                                button = Win32.GET_XBUTTON_WPARAM(wParam) == 1 ? 3 : 4;
                             }
 
-                            if (!ImGui.IsAnyMouseDown() && GetCapture() == hWnd)
+                            if (!ImGui.IsAnyMouseDown() && Win32.GetCapture() == hWnd)
                             {
-                                ReleaseCapture();
+                                Win32.ReleaseCapture();
                             }
                             io.MouseDown[button] = false;
                             return 0;
@@ -354,7 +288,7 @@ namespace ImGuiScene
                     case WindowsMessage.WM_MOUSEWHEEL:
                         if (io.WantCaptureMouse)
                         {
-                            io.MouseWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+                            io.MouseWheel += (float)Win32.GET_WHEEL_DELTA_WPARAM(wParam) / (float)Win32Constants.WHEEL_DELTA;
                             return 0;
                         }
                         break;
@@ -362,7 +296,7 @@ namespace ImGuiScene
                     case WindowsMessage.WM_MOUSEHWHEEL:
                         if (io.WantCaptureMouse)
                         {
-                            io.MouseWheelH += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+                            io.MouseWheelH += (float)Win32.GET_WHEEL_DELTA_WPARAM(wParam) / (float)Win32Constants.WHEEL_DELTA;
                             return 0;
                         }
                         break;
@@ -412,7 +346,7 @@ namespace ImGuiScene
                 }
             }
 
-            return CallWindowProc(_oldWndProcPtr, hWnd, msg, wParam, lParam);
+            return Win32.CallWindowProc(_oldWndProcPtr, hWnd, msg, wParam, lParam);
         }
     }
 }

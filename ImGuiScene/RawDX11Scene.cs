@@ -11,17 +11,19 @@ using Device = SharpDX.Direct3D11.Device;
 
 namespace ImGuiScene
 {
+    // This class will likely eventually be unified a bit more with other scenes, but for
+    // now it should be directly useable
     public sealed class RawDX11Scene : IDisposable
     {
-        public Device _device;
-        private SwapChain _swapChain;
-        private DeviceContext _deviceContext;
+        private Device device;
+        private SwapChain swapChain;
+        private DeviceContext deviceContext;
         private RenderTargetView rtv;
         private IntPtr hWnd;
         private int targetWidth;
         private int targetHeight;
 
-        private ImGui_Impl_DX11 _impl;
+        private ImGui_Impl_DX11 imguiRenderer;
 
         public delegate void BuildUIDelegate();
 
@@ -32,8 +34,8 @@ namespace ImGuiScene
 
         public RawDX11Scene(IntPtr nativeSwapChain)
         {
-            _swapChain = new SwapChain(nativeSwapChain);
-            _device = _swapChain.GetDevice<Device>();
+            this.swapChain = new SwapChain(nativeSwapChain);
+            this.device = swapChain.GetDevice<Device>();
 
             Initialize();
         }
@@ -48,71 +50,61 @@ namespace ImGuiScene
         // By passing in the hooked version explicitly here, we can mostly play nice with debug tools
         public RawDX11Scene(IntPtr nativeDevice, IntPtr nativeSwapChain)
         {
-            _device = new Device(nativeDevice);
-            _swapChain = new SwapChain(nativeSwapChain);
+            this.device = new Device(nativeDevice);
+            this.swapChain = new SwapChain(nativeSwapChain);
 
             Initialize();
         }
 
         private void Initialize()
         {
-            _deviceContext = _device.ImmediateContext;
+            this.deviceContext = this.device.ImmediateContext;
 
-            using (var bb = _swapChain.GetBackBuffer<Texture2D>(0))
+            using (var backbuffer = this.swapChain.GetBackBuffer<Texture2D>(0))
             {
-                rtv = new RenderTargetView(_device, bb);
+                this.rtv = new RenderTargetView(this.device, backbuffer);
             }
 
             // could also do things with GetClientRect() for hWnd, not sure if that is necessary
-            targetWidth = _swapChain.Description.ModeDescription.Width;
-            targetHeight = _swapChain.Description.ModeDescription.Height;
+            this.targetWidth = this.swapChain.Description.ModeDescription.Width;
+            this.targetHeight = this.swapChain.Description.ModeDescription.Height;
 
-            hWnd = _swapChain.Description.OutputHandle;
+            this.hWnd = this.swapChain.Description.OutputHandle;
 
             InitializeImGui();
         }
 
-        public void Dispose()
-        {
-            _impl.Shutdown();
-            ImGui_Input_Impl_Direct.Shutdown();
-
-            ImGui.DestroyContext();
-
-            rtv.Dispose();
-        }
-
         private void InitializeImGui()
         {
-            _impl = new ImGui_Impl_DX11();
+            this.imguiRenderer = new ImGui_Impl_DX11();
 
             ImGui.CreateContext();
 
             ImGui_Input_Impl_Direct.Init(hWnd);
-            _impl.Init(_device, _deviceContext);
+            this.imguiRenderer.Init(this.device, this.deviceContext);
         }
 
         public void Render()
         {
-            _deviceContext.OutputMerger.SetRenderTargets(rtv);
+            this.deviceContext.OutputMerger.SetRenderTargets(this.rtv);
 
-            _impl.NewFrame();
+            this.imguiRenderer.NewFrame();
             // could (should?) grab size every frame, or ideally handle resize somehow (we probably crash now)
             // but as long as we pretend we don't resize, this should be fine
             ImGui_Input_Impl_Direct.NewFrame(targetWidth, targetHeight);
 
             ImGui.NewFrame();
-            OnBuildUI?.Invoke();
+                OnBuildUI?.Invoke();
             ImGui.Render();
 
-            _impl.RenderDrawData(ImGui.GetDrawData());
+            this.imguiRenderer.RenderDrawData(ImGui.GetDrawData());
 
-            _deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
+            this.deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
         }
 
-        public void SS(string path)
+        public void TakeScreenshot(string path)
         {
-            using (var backBuffer = _swapChain.GetBackBuffer<Texture2D>(0))
+            using (var backBuffer = this.swapChain.GetBackBuffer<Texture2D>(0))
             {
                 Texture2DDescription desc = backBuffer.Description;
                 desc.CpuAccessFlags = CpuAccessFlags.Read;
@@ -120,9 +112,9 @@ namespace ImGuiScene
                 desc.OptionFlags = ResourceOptionFlags.None;
                 desc.BindFlags = BindFlags.None;
 
-                using (var tex = new Texture2D(backBuffer.Device, desc))
+                using (var tex = new Texture2D(this.device, desc))
                 {
-                    backBuffer.Device.ImmediateContext.CopyResource(backBuffer, tex);
+                    this.deviceContext.CopyResource(backBuffer, tex);
                     using (var surf = tex.QueryInterface<Surface>())
                     {
                         var map = surf.Map(SharpDX.DXGI.MapFlags.Read, out DataStream dataStream);
@@ -143,6 +135,7 @@ namespace ImGuiScene
                             pixelData[dataCounter++] = w;
                         }
 
+                        // TODO: test this on a thread
                         var gch = GCHandle.Alloc(pixelData, GCHandleType.Pinned);
                         using (var bitmap = new Bitmap(surf.Description.Width, surf.Description.Height, map.Pitch, PixelFormat.Format32bppRgb, gch.AddrOfPinnedObject()))
                         {
@@ -156,5 +149,49 @@ namespace ImGuiScene
                 }
             }
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                }
+
+                this.imguiRenderer.Shutdown();
+                ImGui_Input_Impl_Direct.Shutdown();
+
+                ImGui.DestroyContext();
+
+                this.rtv.Dispose();
+
+                // Not actually sure how sharpdx does ref management, but hopefully they
+                // addref when we create our wrappers, so this should just release that count
+                this.swapChain.Dispose();
+                this.deviceContext.Dispose();
+                this.device.Dispose();
+
+                disposedValue = true;
+            }
+        }
+
+        ~RawDX11Scene()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
