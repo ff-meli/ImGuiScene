@@ -78,6 +78,8 @@ namespace ImGuiScene
         public static extern IntPtr SetCursor(IntPtr handle);
         [DllImport("user32.dll")]
         public static extern IntPtr LoadCursor(IntPtr hInstance, Cursor lpCursorName);
+        [DllImport("user32.dll")]
+        public static extern int ShowCursor(bool bShow);
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr SetWindowLongPtr(IntPtr hWnd, WindowLongType nIndex, IntPtr dwNewLong);
         [DllImport("user32.dll")]

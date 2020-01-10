@@ -19,6 +19,7 @@ namespace ImGuiScene
         private static IntPtr _oldWndProcPtr;
         private static ImGuiMouseCursor _oldCursor = ImGuiMouseCursor.None;
         private static IntPtr[] _cursors;
+        private static bool _mouseCapturedLastFrame = false;
 
         public static void Init(IntPtr hWnd)
         {
@@ -178,6 +179,16 @@ namespace ImGuiScene
             {
                 Win32.SetCursor(_cursors[(int)cur]);
             }
+
+            if (io.WantCaptureMouse && !_mouseCapturedLastFrame)
+            {
+                Win32.ShowCursor(false);
+            }
+            else if (!io.WantCaptureMouse && _mouseCapturedLastFrame)
+            {
+                Win32.ShowCursor(true);
+            }
+            _mouseCapturedLastFrame = io.WantCaptureMouse;
 
             return true;
         }
