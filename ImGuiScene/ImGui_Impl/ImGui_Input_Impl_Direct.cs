@@ -17,7 +17,8 @@ namespace ImGuiScene
         private static WndProcDelegate _wndProcDelegate;
         private static IntPtr _wndProcPtr;
         private static IntPtr _oldWndProcPtr;
-        // private static ImGuiMouseCursor _oldCursor;
+        private static ImGuiMouseCursor _oldCursor = ImGuiMouseCursor.None;
+        private static IntPtr[] _cursors;
 
         public static void Init(IntPtr hWnd)
         {
@@ -63,6 +64,16 @@ namespace ImGuiScene
             io.KeyMap[(int)ImGuiKey.X] = (int)VirtualKey.X;
             io.KeyMap[(int)ImGuiKey.Y] = (int)VirtualKey.Y;
             io.KeyMap[(int)ImGuiKey.Z] = (int)VirtualKey.Z;
+
+            _cursors = new IntPtr[8];
+            _cursors[(int)ImGuiMouseCursor.Arrow] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_ARROW);
+            _cursors[(int)ImGuiMouseCursor.TextInput] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_IBEAM);
+            _cursors[(int)ImGuiMouseCursor.ResizeAll] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_SIZEALL);
+            _cursors[(int)ImGuiMouseCursor.ResizeEW] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_SIZEWE);
+            _cursors[(int)ImGuiMouseCursor.ResizeNS] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_SIZENS);
+            _cursors[(int)ImGuiMouseCursor.ResizeNESW] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_SIZENESW);
+            _cursors[(int)ImGuiMouseCursor.ResizeNWSE] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_SIZENWSE);
+            _cursors[(int)ImGuiMouseCursor.Hand] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_HAND);
         }
 
         public static void Shutdown()
@@ -82,6 +93,8 @@ namespace ImGuiScene
                 Marshal.FreeHGlobal(_platformNamePtr);
                 _platformNamePtr = IntPtr.Zero;
             }
+
+            _cursors = null;
         }
 
 
@@ -108,18 +121,19 @@ namespace ImGuiScene
 
             // this is what imgui's example does, but it doesn't seem to work for us
             // this could be a timing issue.. or their logic could just be wrong for many applications
-            //var cursor = io.MouseDrawCursor ? ImGuiMouseCursor.None : ImGui.GetMouseCursor();
-            //if (_oldCursor != cursor)
-            //{
-            //    _oldCursor = cursor;
-            //    UpdateMouseCursor();
-            //}
-
-            // hacky attempt to make cursors work how I think they 'should'
-            if (io.WantCaptureMouse || io.MouseDrawCursor)
+            var cursor = io.MouseDrawCursor ? ImGuiMouseCursor.None : ImGui.GetMouseCursor();
+            if (_oldCursor != cursor)
             {
+                _oldCursor = cursor;
                 UpdateMouseCursor();
             }
+
+            // TODO: disabled due to seemingly causing framerate issues and flicker when vsync is disabled
+            // hacky attempt to make cursors work how I think they 'should'
+            //if (io.WantCaptureMouse || io.MouseDrawCursor)
+            //{
+            //    UpdateMouseCursor();
+            //}
         }
 
         private static void UpdateMousePos()
@@ -162,43 +176,7 @@ namespace ImGuiScene
             }
             else
             {
-                var win32Cur = Cursor.IDC_ARROW;
-                switch (cur)
-                {
-                    case ImGuiMouseCursor.Arrow:
-                        win32Cur = Cursor.IDC_ARROW;
-                        break;
-
-                    case ImGuiMouseCursor.TextInput:
-                        win32Cur = Cursor.IDC_IBEAM;
-                        break;
-
-                    case ImGuiMouseCursor.ResizeAll:
-                        win32Cur = Cursor.IDC_SIZEALL;
-                        break;
-
-                    case ImGuiMouseCursor.ResizeEW:
-                        win32Cur = Cursor.IDC_SIZEWE;
-                        break;
-
-                    case ImGuiMouseCursor.ResizeNS:
-                        win32Cur = Cursor.IDC_SIZENS;
-                        break;
-
-                    case ImGuiMouseCursor.ResizeNESW:
-                        win32Cur = Cursor.IDC_SIZENESW;
-                        break;
-
-                    case ImGuiMouseCursor.ResizeNWSE:
-                        win32Cur = Cursor.IDC_SIZENWSE;
-                        break;
-
-                    case ImGuiMouseCursor.Hand:
-                        win32Cur = Cursor.IDC_HAND;
-                        break;
-                }
-
-                Win32.SetCursor(Win32.LoadCursor(IntPtr.Zero, win32Cur));
+                Win32.SetCursor(_cursors[(int)cur]);
             }
 
             return true;
@@ -238,8 +216,7 @@ namespace ImGuiScene
                             }
                             else if (wmsg == WindowsMessage.WM_XBUTTONDOWN || wmsg == WindowsMessage.WM_XBUTTONDBLCLK)
                             {
-                                // XBUTTON1 == 3
-                                button = Win32.GET_XBUTTON_WPARAM(wParam) == 1 ? 3 : 4;
+                                button = Win32.GET_XBUTTON_WPARAM(wParam) == Win32Constants.XBUTTON1 ? 3 : 4;
                             }
 
                             if (!ImGui.IsAnyMouseDown() && Win32.GetCapture() == IntPtr.Zero)
@@ -272,8 +249,7 @@ namespace ImGuiScene
                             }
                             else if (wmsg == WindowsMessage.WM_XBUTTONUP)
                             {
-                                // XBUTTON1 == 3
-                                button = Win32.GET_XBUTTON_WPARAM(wParam) == 1 ? 3 : 4;
+                                button = Win32.GET_XBUTTON_WPARAM(wParam) == Win32Constants.XBUTTON1 ? 3 : 4;
                             }
 
                             if (!ImGui.IsAnyMouseDown() && Win32.GetCapture() == hWnd)
@@ -333,13 +309,18 @@ namespace ImGuiScene
                         }
                         break;
 
-                    // this never seemed to work reasonably
-                    //case WindowsMessage.WM_SETCURSOR:
-                    //    if (LOWORD((ulong)lParam) == HTCLIENT && UpdateMouseCursor())
-                    //    {
-                    //        return 0;
-                    //    }
-                    //    break;
+                    // this never seemed to work reasonably, but I'll leave it for now
+                    case WindowsMessage.WM_SETCURSOR:
+                        if (io.WantCaptureMouse)
+                        {
+                            if (Win32.LOWORD((ulong)lParam) == Win32Constants.HTCLIENT && UpdateMouseCursor())
+                            {
+                                // this message returns 1 to block further processing
+                                // because consistency is no fun
+                                return 1;
+                            }
+                        }
+                        break;
 
                     default:
                         break;

@@ -14,27 +14,45 @@ namespace ImGuiScene
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short HIWORD(ulong val)
+        public static ushort HIWORD(ulong val)
         {
-            return (short)(val >> 16);
+            // #define HIWORD(l)  ((WORD)((((DWORD_PTR)(l)) >> 16) & 0xffff))
+            return (ushort)((val >> 16) & 0xFFFF);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short LOWORD(ulong val)
+        public static ushort LOWORD(ulong val)
         {
-            return (short)(val & 0xFFFF);
+            // #define LOWORD(l)  ((WORD)(((DWORD_PTR)(l)) & 0xffff))
+            return (ushort)(val & 0xFFFF);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short GET_XBUTTON_WPARAM(ulong val)
+        public static ushort GET_XBUTTON_WPARAM(ulong val)
         {
+            // #define GET_XBUTTON_WPARAM(wParam)  (HIWORD(wParam))
             return HIWORD(val);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short GET_WHEEL_DELTA_WPARAM(ulong val)
         {
-            return HIWORD(val);
+            // #define GET_WHEEL_DELTA_WPARAM(wParam)  ((short)HIWORD(wParam))
+            return (short)HIWORD(val);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GET_X_LPARAM(ulong val)
+        {
+            // #define GET_X_LPARAM(lp)  ((int)(short)LOWORD(lp))
+            return (int)(short)LOWORD(val);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GET_Y_LPARAM(ulong val)
+        {
+            // #define GET_Y_LPARAM(lp)  ((int)(short)HIWORD(lp))
+            return (int)(short)HIWORD(val);
         }
 
 

@@ -1,11 +1,15 @@
 ﻿namespace ImGuiScene
 {
-    // For now this holds things that are seemingly just #defined in win32
-    // If we get too many of these and/or have overlap, they can be split out
-    enum Win32Constants : int
+    // Assorted other win32 constants that are seemingly just #defined
+    // Not an enum like the others because the types vary and there are overlapping values
+    static class Win32Constants
     {
-        HTCLIENT = 1,
-        WHEEL_DELTA = 120
+        public const short HTTRANSPARENT = -1;
+        public const short HTCLIENT = 1;
+
+        public const short XBUTTON1 = 1;
+
+        public const int WHEEL_DELTA = 120;
     }
 
     enum WindowLongType : int
