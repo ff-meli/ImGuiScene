@@ -94,12 +94,25 @@ namespace ImGuiScene
             ImGui_Input_Impl_Direct.NewFrame(targetWidth, targetHeight);
 
             ImGui.NewFrame();
-                OnBuildUI?.Invoke();
+            OnBuildUI?.Invoke();
             ImGui.Render();
 
             this.imguiRenderer.RenderDrawData(ImGui.GetDrawData());
 
             this.deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
+        }
+
+        public void Disable()
+        {
+            ImGui_Input_Impl_Direct.Disable();
+
+            // we could set a flag here to make Render() not do anything
+            // but since it's an application external call already, they should manage that themselves
+        }
+
+        public void Enable()
+        {
+            ImGui_Input_Impl_Direct.Disable();
         }
 
         public void TakeScreenshot(string path)

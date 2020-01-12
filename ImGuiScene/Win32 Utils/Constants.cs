@@ -10,6 +10,9 @@
         public const short XBUTTON1 = 1;
 
         public const int WHEEL_DELTA = 120;
+
+        public const int CURSOR_SHOWING = 1;
+        public const int CURSOR_SUPPRESSED = 2;
     }
 
     enum WindowLongType : int

@@ -98,6 +98,30 @@ namespace ImGuiScene
             _cursors = null;
         }
 
+        public static void Disable()
+        {
+            // TODO: may want to unhook wndproc entirely, but I'm not sure if repeatedly un- and re-hooking it
+            // will actually create a new window subclass each time
+            ImGui.GetIO().WantCaptureKeyboard = ImGui.GetIO().WantCaptureMouse = false;
+
+            // re-show the cursor if we hid it
+            // this will generally be true if Disable() was called when the mouse was over the ui
+            // TODO: should probably actually track cursor state directly to make this more generic
+            if (Win32.GetCursorInfo(out Win32.CURSORINFO pci))
+            {
+                if ((pci.flags & Win32Constants.CURSOR_SHOWING) == 0)
+                {
+                    Win32.ShowCursor(true);
+                }
+            }
+        }
+
+        public static void Enable()
+        {
+            // for now, nothing to do
+            // if Disable() unhooks wndproc, we should rehook it here
+        }
+
 
         public static void NewFrame(int targetWidth, int targetHeight)
         {

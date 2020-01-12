@@ -13,6 +13,15 @@ namespace ImGuiScene
             public int Y;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CURSORINFO
+        {
+            public Int32 cbSize;
+            public Int32 flags;
+            public IntPtr hCursor;
+            public POINT ptScreenPos;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort HIWORD(ulong val)
         {
@@ -84,5 +93,18 @@ namespace ImGuiScene
         public static extern IntPtr SetWindowLongPtr(IntPtr hWnd, WindowLongType nIndex, IntPtr dwNewLong);
         [DllImport("user32.dll")]
         public static extern long CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint Msg, ulong wParam, long lParam);
+
+        [DllImport("user32.dll", EntryPoint = "GetCursorInfo")]
+        private static extern bool GetCursorInfo_Internal(ref CURSORINFO pci);
+
+        public static bool GetCursorInfo(out CURSORINFO pci)
+        {
+            pci = new CURSORINFO
+            {
+                cbSize = Marshal.SizeOf(typeof(CURSORINFO))
+            };
+
+            return GetCursorInfo_Internal(ref pci);
+        }
     }
 }
