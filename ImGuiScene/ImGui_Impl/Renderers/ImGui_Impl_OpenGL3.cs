@@ -90,6 +90,7 @@ namespace ImGuiScene
                 var cmdList = drawData.CmdListsRange[n];
 
                 // Upload vertex/index buffers
+                // TODO: this is *awful*
                 Gl.BufferData(BufferTarget.ArrayBuffer, (uint)(cmdList.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>()), cmdList.VtxBuffer.Data, BufferUsage.StreamDraw);
                 Gl.BufferData(BufferTarget.ElementArrayBuffer, (uint)(cmdList.IdxBuffer.Size * sizeof(ushort)), cmdList.IdxBuffer.Data, BufferUsage.StreamDraw);
 

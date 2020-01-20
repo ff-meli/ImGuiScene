@@ -3,9 +3,6 @@ using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 
 using Device = SharpDX.Direct3D11.Device;
 
@@ -24,6 +21,7 @@ namespace ImGuiScene
         private int targetHeight;
 
         private ImGui_Impl_DX11 imguiRenderer;
+        private ImGui_Input_Impl_Direct imguiInput;
 
         public delegate void BuildUIDelegate();
 
@@ -80,7 +78,7 @@ namespace ImGuiScene
 
             ImGui.CreateContext();
 
-            ImGui_Input_Impl_Direct.Init(hWnd);
+            this.imguiInput = new ImGui_Input_Impl_Direct(hWnd);
             this.imguiRenderer.Init(this.device, this.deviceContext);
         }
 
@@ -89,12 +87,12 @@ namespace ImGuiScene
             this.deviceContext.OutputMerger.SetRenderTargets(this.rtv);
 
             this.imguiRenderer.NewFrame();
-            // could (should?) grab size every frame, or ideally handle resize somehow (we probably crash now)
+            // could (should?) grab size every frame, or ideally handle resize somehow
             // but as long as we pretend we don't resize, this should be fine
-            ImGui_Input_Impl_Direct.NewFrame(targetWidth, targetHeight);
+            this.imguiInput.NewFrame(targetWidth, targetHeight);
 
             ImGui.NewFrame();
-            OnBuildUI?.Invoke();
+                OnBuildUI?.Invoke();
             ImGui.Render();
 
             this.imguiRenderer.RenderDrawData(ImGui.GetDrawData());
@@ -102,25 +100,12 @@ namespace ImGuiScene
             this.deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
         }
 
-        public void Disable()
-        {
-            ImGui_Input_Impl_Direct.Disable();
-
-            // we could set a flag here to make Render() not do anything
-            // but since it's an application external call already, they should manage that themselves
-        }
-
-        public void Enable()
-        {
-            ImGui_Input_Impl_Direct.Disable();
-        }
-
         public bool IsImGuiCursor(IntPtr hCursor)
         {
-            return ImGui_Input_Impl_Direct.IsImGuiCursor(hCursor);
+            return this.imguiInput.IsImGuiCursor(hCursor);
         }
 
-        public void TakeScreenshot(string path)
+        public byte[] CaptureScreenshot()
         {
             using (var backBuffer = this.swapChain.GetBackBuffer<Texture2D>(0))
             {
@@ -154,15 +139,17 @@ namespace ImGuiScene
                         }
 
                         // TODO: test this on a thread
-                        var gch = GCHandle.Alloc(pixelData, GCHandleType.Pinned);
-                        using (var bitmap = new Bitmap(surf.Description.Width, surf.Description.Height, map.Pitch, PixelFormat.Format32bppRgb, gch.AddrOfPinnedObject()))
-                        {
-                            bitmap.Save(path);
-                        }
+                        //var gch = GCHandle.Alloc(pixelData, GCHandleType.Pinned);
+                        //using (var bitmap = new Bitmap(surf.Description.Width, surf.Description.Height, map.Pitch, PixelFormat.Format32bppRgb, gch.AddrOfPinnedObject()))
+                        //{
+                        //    bitmap.Save(path);
+                        //}
+                        //gch.Free();
 
-                        gch.Free();
                         surf.Unmap();
                         dataStream.Dispose();
+
+                        return pixelData;
                     }
                 }
             }
@@ -181,7 +168,7 @@ namespace ImGuiScene
                 }
 
                 this.imguiRenderer.Shutdown();
-                ImGui_Input_Impl_Direct.Shutdown();
+                this.imguiInput.Dispose();
 
                 ImGui.DestroyContext();
 

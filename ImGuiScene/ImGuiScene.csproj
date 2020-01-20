@@ -52,14 +52,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FramerateLimit.cs" />
-    <Compile Include="ImGui_Impl\IImGuiRenderer.cs" />
-    <Compile Include="ImGui_Impl\ImGui_Impl_OpenGL3.cs" />
-    <Compile Include="ImGui_Impl\ImGui_Input_Impl_Direct.cs" />
+    <Compile Include="ImGui_Impl\Input\IImGuiInputHandler.cs" />
+    <Compile Include="ImGui_Impl\Renderers\IImGuiRenderer.cs" />
+    <Compile Include="ImGui_Impl\Renderers\ImGui_Impl_OpenGL3.cs" />
+    <Compile Include="ImGui_Impl\Input\ImGui_Input_Impl_Direct.cs" />
     <Compile Include="RawDX11Scene.cs" />
     <Compile Include="Renderers\IRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ImGui_Impl\ImGui_Impl_DX11.cs" />
-    <Compile Include="ImGui_Impl\ImGui_Impl_SDL.cs" />
+    <Compile Include="ImGui_Impl\Renderers\ImGui_Impl_DX11.cs" />
+    <Compile Include="ImGui_Impl\Input\ImGui_Impl_SDL.cs" />
     <Compile Include="Renderers\RendererFactory.cs" />
     <Compile Include="Win32 Utils\Constants.cs" />
     <Compile Include="Win32 Utils\Win32.cs" />

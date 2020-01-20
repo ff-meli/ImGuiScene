@@ -8,20 +8,20 @@ namespace ImGuiScene
 {
     // largely a port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_win32.cpp, though some changes
     // and wndproc hooking
-    public static class ImGui_Input_Impl_Direct
+    public class ImGui_Input_Impl_Direct : IImGuiInputHandler
     {
         delegate long WndProcDelegate(IntPtr hWnd, uint msg, ulong wParam, long lParam);
 
-        private static long _lastTime;
-        private static IntPtr _platformNamePtr;
-        private static IntPtr _hWnd;
-        private static WndProcDelegate _wndProcDelegate;
-        private static IntPtr _wndProcPtr;
-        private static IntPtr _oldWndProcPtr;
-        private static ImGuiMouseCursor _oldCursor = ImGuiMouseCursor.None;
-        private static IntPtr[] _cursors;
+        private long _lastTime;
+        private IntPtr _platformNamePtr;
+        private IntPtr _hWnd;
+        private WndProcDelegate _wndProcDelegate;
+        private IntPtr _wndProcPtr;
+        private IntPtr _oldWndProcPtr;
+        // private ImGuiMouseCursor _oldCursor = ImGuiMouseCursor.None;
+        private IntPtr[] _cursors;
 
-        public static void Init(IntPtr hWnd)
+        public ImGui_Input_Impl_Direct(IntPtr hWnd)
         {
             _hWnd = hWnd;
 
@@ -77,46 +77,12 @@ namespace ImGuiScene
             _cursors[(int)ImGuiMouseCursor.Hand] = Win32.LoadCursor(IntPtr.Zero, Cursor.IDC_HAND);
         }
 
-        public static void Shutdown()
-        {
-            if (_oldWndProcPtr != IntPtr.Zero)
-            {
-                Win32.SetWindowLongPtr(_hWnd, WindowLongType.GWL_WNDPROC, _oldWndProcPtr);
-            }
-
-            if (_platformNamePtr != IntPtr.Zero)
-            {
-                unsafe
-                {
-                    ImGui.GetIO().NativePtr->BackendPlatformName = null;
-                }
-
-                Marshal.FreeHGlobal(_platformNamePtr);
-                _platformNamePtr = IntPtr.Zero;
-            }
-
-            _cursors = null;
-        }
-
-        public static void Enable()
-        {
-            // for now, nothing to do
-            // if Disable() unhooks wndproc, we should rehook it here
-        }
-
-        public static void Disable()
-        {
-            // TODO: may want to unhook wndproc entirely, but I'm not sure if repeatedly un- and re-hooking it
-            // will actually create a new window subclass each time
-            ImGui.GetIO().WantCaptureKeyboard = ImGui.GetIO().WantCaptureMouse = false;
-        }
-
-        public static bool IsImGuiCursor(IntPtr hCursor)
+        public bool IsImGuiCursor(IntPtr hCursor)
         {
             return _cursors?.Contains(hCursor) ?? false;
         }
 
-        public static void NewFrame(int targetWidth, int targetHeight)
+        public void NewFrame(int targetWidth, int targetHeight)
         {
             var io = ImGui.GetIO();
 
@@ -160,7 +126,7 @@ namespace ImGuiScene
             }
         }
 
-        private static void UpdateMousePos()
+        private void UpdateMousePos()
         {
             var io = ImGui.GetIO();
 
@@ -185,7 +151,7 @@ namespace ImGuiScene
             }
         }
 
-        private static bool UpdateMouseCursor()
+        private bool UpdateMouseCursor()
         {
             var io = ImGui.GetIO();
             if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.NoMouseCursorChange))
@@ -206,7 +172,7 @@ namespace ImGuiScene
             return true;
         }
 
-        private static long WndProcDetour(IntPtr hWnd, uint msg, ulong wParam, long lParam)
+        private long WndProcDetour(IntPtr hWnd, uint msg, ulong wParam, long lParam)
         {
             if (hWnd == _hWnd && ImGui.GetCurrentContext() != IntPtr.Zero && (ImGui.GetIO().WantCaptureMouse || ImGui.GetIO().WantCaptureKeyboard))
             {
@@ -353,5 +319,57 @@ namespace ImGuiScene
 
             return Win32.CallWindowProc(_oldWndProcPtr, hWnd, msg, wParam, lParam);
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    _cursors = null;
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                if (_oldWndProcPtr != IntPtr.Zero)
+                {
+                    Win32.SetWindowLongPtr(_hWnd, WindowLongType.GWL_WNDPROC, _oldWndProcPtr);
+                    _oldWndProcPtr = IntPtr.Zero;
+                }
+
+                if (_platformNamePtr != IntPtr.Zero)
+                {
+                    unsafe
+                    {
+                        ImGui.GetIO().NativePtr->BackendPlatformName = null;
+                    }
+
+                    Marshal.FreeHGlobal(_platformNamePtr);
+                    _platformNamePtr = IntPtr.Zero;
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        ~ImGui_Input_Impl_Direct()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

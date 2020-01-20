@@ -104,8 +104,12 @@ namespace ImGuiScene
             set { Window.OnSDLEvent = value; }
         }
 
+        // TODO: weak refs?
         private List<IDisposable> _allocatedResources = new List<IDisposable>();
         private bool _pauseRendering;
+
+        // Not using interface for now, needs work
+        private ImGui_Impl_SDL _imguiInput;
 
         /// <summary>
         /// Helper method to create a fullscreen transparent overlay that exits when pressing the specified key.
@@ -156,10 +160,10 @@ namespace ImGuiScene
 
             ImGui.CreateContext();
 
-            ImGui_Impl_SDL.Init(Window.Window);
+            _imguiInput = new ImGui_Impl_SDL(Window.Window);
             Renderer.ImGui_Init();
 
-            Window.OnSDLEvent += ImGui_Impl_SDL.ProcessEvent;
+            Window.OnSDLEvent += _imguiInput.ProcessEvent;
         }
 
         /// <summary>
@@ -243,7 +247,9 @@ namespace ImGuiScene
             if (!_pauseRendering)
             {
                 Renderer.ImGui_NewFrame();
-                ImGui_Impl_SDL.NewFrame();
+
+                SDL_GetWindowSize(Window.Window, out int width, out int height);
+                _imguiInput.NewFrame(width, height);
 
                 ImGui.NewFrame();
                     OnBuildUI?.Invoke();
@@ -334,7 +340,7 @@ namespace ImGuiScene
                 // TODO: set large fields to null.
 
                 Renderer.ImGui_Shutdown();
-                ImGui_Impl_SDL.Shutdown();
+                _imguiInput.Dispose();
 
                 ImGui.DestroyContext();
 

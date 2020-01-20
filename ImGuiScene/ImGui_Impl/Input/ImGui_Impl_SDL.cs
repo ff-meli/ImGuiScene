@@ -10,91 +10,23 @@ namespace ImGuiScene
     /// Currently undocumented because it is a horrible mess.
     /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_sdl.cpp
     /// </summary>
-    public class ImGui_Impl_SDL
+    public class ImGui_Impl_SDL : IImGuiInputHandler
     {
-        private static IntPtr _platformNamePtr;
-        private static IntPtr _sdlWindow;
-        private static IntPtr[] _mouseCursors = new IntPtr[(int)ImGuiMouseCursor.COUNT];
-        private static bool[] _mousePressed = new bool[3];
-        private static ulong _lastTime;
+        private IntPtr _platformNamePtr;
+        private IntPtr _sdlWindow;
+        private IntPtr[] _mouseCursors = new IntPtr[(int)ImGuiMouseCursor.COUNT];
+        private bool[] _mousePressed = new bool[3];
+        private ulong _lastTime;
 
         private delegate void SetClipboardTextDelegate(IntPtr userData, string text);
         private delegate string GetClipboardTextDelegate();
 
-        // class variables because they need to exist for the program duration without being gc'd
-        private static SetClipboardTextDelegate _setText;
-        private static GetClipboardTextDelegate _getText;
+        // variables because they need to exist for the program duration without being gc'd
+        private SetClipboardTextDelegate _setText;
+        private GetClipboardTextDelegate _getText;
 
-        private static void SetClipboardText(IntPtr userData, string text)
-        {
-            // text always seems to have an extra newline, but I'll leave it for now
-            SDL_SetClipboardText(text);
-        }
 
-        private static string GetClipboardText()
-        {
-            return SDL_GetClipboardText();
-        }
-
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        // If you have multiple SDL events and some of them are not meant to be used by dear imgui, you may need to filter events based on their windowID field.
-        public static void ProcessEvent(ref SDL_Event sdlEvent)
-        {
-            var io = ImGui.GetIO();
-
-            switch (sdlEvent.type)
-            {
-                case SDL_EventType.SDL_MOUSEWHEEL:
-                    if (sdlEvent.wheel.x > 0) io.MouseWheelH += 1f;
-                    if (sdlEvent.wheel.x < 0) io.MouseWheelH -= 1f;
-                    if (sdlEvent.wheel.y > 0) io.MouseWheel += 1f;
-                    if (sdlEvent.wheel.y < 0) io.MouseWheel -= 1f;
-                    break;
-
-                case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                    if (sdlEvent.button.button == SDL_BUTTON_LEFT) _mousePressed[0] = true;
-                    if (sdlEvent.button.button == SDL_BUTTON_RIGHT) _mousePressed[1] = true;
-                    if (sdlEvent.button.button == SDL_BUTTON_MIDDLE) _mousePressed[2] = true;
-                    break;
-
-                case SDL_EventType.SDL_TEXTINPUT:
-                    byte[] byteCopy;
-                    unsafe
-                    {
-                        fixed (byte* text = sdlEvent.text.text)
-                        {
-                            int strlen;
-                            for (strlen = 0; strlen < SDL_TEXTINPUTEVENT_TEXT_SIZE; strlen++)
-                            {
-                                if (text[strlen] == 0x00)
-                                {
-                                    break;
-                                }
-                            }
-
-                            byteCopy = new byte[strlen];
-                            Marshal.Copy((IntPtr)text, byteCopy, 0, strlen);
-                        }
-                    }
-                    io.AddInputCharactersUTF8(Encoding.UTF8.GetString(byteCopy));
-                    break;
-
-                case SDL_EventType.SDL_KEYDOWN:
-                case SDL_EventType.SDL_KEYUP:
-                    var key = sdlEvent.key.keysym.scancode;
-                    io.KeysDown[(int)key] = (sdlEvent.type == SDL_EventType.SDL_KEYDOWN);
-                    io.KeyShift = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_SHIFT) != 0;
-                    io.KeyCtrl = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_CTRL) != 0;
-                    io.KeyAlt = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_ALT) != 0;
-                    io.KeySuper = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_GUI) != 0;
-                    break;
-            }
-        }
-
-        public static bool Init(IntPtr sdlWindow)
+        public ImGui_Impl_SDL(IntPtr sdlWindow)
         {
             _sdlWindow = sdlWindow;
 
@@ -155,33 +87,36 @@ namespace ImGuiScene
 
             var sysWmInfo = new SDL_SysWMinfo();
             SDL_GetVersion(out sysWmInfo.version);
-            SDL_GetWindowWMInfo(sdlWindow, ref sysWmInfo);
+            SDL_GetWindowWMInfo(_sdlWindow, ref sysWmInfo);
             io.ImeWindowHandle = sysWmInfo.info.win.window;
-
-            return true;
         }
 
-        public static void Shutdown()
+        public void NewFrame(int width, int height)
         {
-            _sdlWindow = IntPtr.Zero;
+            var io = ImGui.GetIO();
 
-            ImGui.GetIO().SetClipboardTextFn = IntPtr.Zero;
-            ImGui.GetIO().GetClipboardTextFn = IntPtr.Zero;
-
-            // Destroy SDL mouse cursors
-            foreach (var cur in _mouseCursors)
+            // Setup display size (every frame to accommodate for window resizing)
+            //SDL_GetWindowSize(_sdlWindow, out int w, out int h);
+            SDL_GL_GetDrawableSize(_sdlWindow, out int displayW, out int displayH);
+            io.DisplaySize.X = width;
+            io.DisplaySize.Y = height;
+            if (width > 0 && height > 0)
             {
-                SDL_FreeCursor(cur);
+                io.DisplayFramebufferScale.X = (float)displayW / width;
+                io.DisplayFramebufferScale.Y = (float)displayH / height;
             }
 
-            if (_platformNamePtr != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(_platformNamePtr);
-                _platformNamePtr = IntPtr.Zero;
-            }
+            // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
+            var frequency = SDL_GetPerformanceFrequency();
+            var currentTime = SDL_GetPerformanceCounter();
+            io.DeltaTime = _lastTime > 0 ? (float)((double)(currentTime - _lastTime) / frequency) : 1f / 60;
+            _lastTime = currentTime;
+
+            UpdateMousePosAndButtons();
+            UpdateMouseCursor();
         }
 
-        public static void UpdateMousePosAndButtons()
+        private void UpdateMousePosAndButtons()
         {
             var io = ImGui.GetIO();
 
@@ -220,7 +155,7 @@ namespace ImGuiScene
             SDL_CaptureMouse(ImGui.IsAnyMouseDown() ? SDL_bool.SDL_TRUE : SDL_bool.SDL_FALSE);
         }
 
-        public static void UpdateMouseCursor()
+        private void UpdateMouseCursor()
         {
             var io = ImGui.GetIO();
 
@@ -243,29 +178,126 @@ namespace ImGuiScene
             }
         }
 
-        public static void NewFrame()
+        private static void SetClipboardText(IntPtr userData, string text)
+        {
+            // text always seems to have an extra newline, but I'll leave it for now
+            SDL_SetClipboardText(text);
+        }
+
+        private static string GetClipboardText()
+        {
+            return SDL_GetClipboardText();
+        }
+
+        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+        // If you have multiple SDL events and some of them are not meant to be used by dear imgui, you may need to filter events based on their windowID field.
+        internal void ProcessEvent(ref SDL_Event sdlEvent)
         {
             var io = ImGui.GetIO();
 
-            // Setup display size (every frame to accommodate for window resizing)
-            SDL_GetWindowSize(_sdlWindow, out int w, out int h);
-            SDL_GL_GetDrawableSize(_sdlWindow, out int displayW, out int displayH);
-            io.DisplaySize.X = w;
-            io.DisplaySize.Y = h;
-            if (w > 0 && h > 0)
+            switch (sdlEvent.type)
             {
-                io.DisplayFramebufferScale.X = (float)displayW / w;
-                io.DisplayFramebufferScale.Y = (float)displayH / h;
+                case SDL_EventType.SDL_MOUSEWHEEL:
+                    if (sdlEvent.wheel.x > 0) io.MouseWheelH += 1f;
+                    if (sdlEvent.wheel.x < 0) io.MouseWheelH -= 1f;
+                    if (sdlEvent.wheel.y > 0) io.MouseWheel += 1f;
+                    if (sdlEvent.wheel.y < 0) io.MouseWheel -= 1f;
+                    break;
+
+                case SDL_EventType.SDL_MOUSEBUTTONDOWN:
+                    if (sdlEvent.button.button == SDL_BUTTON_LEFT) _mousePressed[0] = true;
+                    if (sdlEvent.button.button == SDL_BUTTON_RIGHT) _mousePressed[1] = true;
+                    if (sdlEvent.button.button == SDL_BUTTON_MIDDLE) _mousePressed[2] = true;
+                    break;
+
+                case SDL_EventType.SDL_TEXTINPUT:
+                    byte[] byteCopy;
+                    unsafe
+                    {
+                        fixed (byte* text = sdlEvent.text.text)
+                        {
+                            int strlen;
+                            for (strlen = 0; strlen < SDL_TEXTINPUTEVENT_TEXT_SIZE; strlen++)
+                            {
+                                if (text[strlen] == 0x00)
+                                {
+                                    break;
+                                }
+                            }
+
+                            byteCopy = new byte[strlen];
+                            Marshal.Copy((IntPtr)text, byteCopy, 0, strlen);
+                        }
+                    }
+                    io.AddInputCharactersUTF8(Encoding.UTF8.GetString(byteCopy));
+                    break;
+
+                case SDL_EventType.SDL_KEYDOWN:
+                case SDL_EventType.SDL_KEYUP:
+                    var key = sdlEvent.key.keysym.scancode;
+                    io.KeysDown[(int)key] = (sdlEvent.type == SDL_EventType.SDL_KEYDOWN);
+                    io.KeyShift = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_SHIFT) != 0;
+                    io.KeyCtrl = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_CTRL) != 0;
+                    io.KeyAlt = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_ALT) != 0;
+                    io.KeySuper = ((int)SDL_GetModState() & (int)SDL_Keymod.KMOD_GUI) != 0;
+                    break;
             }
-
-            // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
-            var frequency = SDL_GetPerformanceFrequency();
-            var currentTime = SDL_GetPerformanceCounter();
-            io.DeltaTime = _lastTime > 0 ? (float)((double)(currentTime - _lastTime) / frequency) : 1f / 60;
-            _lastTime = currentTime;
-
-            UpdateMousePosAndButtons();
-            UpdateMouseCursor();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    _setText = null;
+                    _getText = null;
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                _sdlWindow = IntPtr.Zero;
+
+                ImGui.GetIO().SetClipboardTextFn = IntPtr.Zero;
+                ImGui.GetIO().GetClipboardTextFn = IntPtr.Zero;
+
+                // Destroy SDL mouse cursors
+                foreach (var cur in _mouseCursors)
+                {
+                    SDL_FreeCursor(cur);
+                }
+
+                if (_platformNamePtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_platformNamePtr);
+                    _platformNamePtr = IntPtr.Zero;
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        ~ImGui_Impl_SDL()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
