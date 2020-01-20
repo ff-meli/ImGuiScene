@@ -30,6 +30,17 @@ namespace ImGuiScene
         /// </summary>
         public BuildUIDelegate OnBuildUI;
 
+        private string imguiIniPath = null;
+        public string ImGuiIniPath
+        {
+            get { return imguiIniPath; }
+            set
+            {
+                imguiIniPath = value;
+                imguiInput.SetIniPath(imguiIniPath);
+            }
+        }
+
         public RawDX11Scene(IntPtr nativeSwapChain)
         {
             this.swapChain = new SwapChain(nativeSwapChain);

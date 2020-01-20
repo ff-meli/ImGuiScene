@@ -14,6 +14,7 @@ namespace ImGuiScene
 
         private long _lastTime;
         private IntPtr _platformNamePtr;
+        private IntPtr _iniPathPtr;
         private IntPtr _hWnd;
         private WndProcDelegate _wndProcDelegate;
         private IntPtr _wndProcPtr;
@@ -123,6 +124,24 @@ namespace ImGuiScene
             if (io.WantCaptureMouse || io.MouseDrawCursor)
             {
                 UpdateMouseCursor();
+            }
+        }
+
+        public void SetIniPath(string iniPath)
+        {
+            // TODO: error/messaging when trying to set after first render?
+            if (iniPath != null)
+            {
+                if (_iniPathPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_iniPathPtr);
+                }
+
+                _iniPathPtr = Marshal.StringToHGlobalAnsi(iniPath);
+                unsafe
+                {
+                    ImGui.GetIO().NativePtr->IniFilename = (byte*)_iniPathPtr.ToPointer();
+                }
             }
         }
 
@@ -351,6 +370,17 @@ namespace ImGuiScene
 
                     Marshal.FreeHGlobal(_platformNamePtr);
                     _platformNamePtr = IntPtr.Zero;
+                }
+
+                if (_iniPathPtr != IntPtr.Zero)
+                {
+                    unsafe
+                    {
+                        ImGui.GetIO().NativePtr->IniFilename = null;
+                    }
+
+                    Marshal.FreeHGlobal(_iniPathPtr);
+                    _iniPathPtr = IntPtr.Zero;
                 }
 
                 disposedValue = true;

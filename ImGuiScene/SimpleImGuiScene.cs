@@ -56,6 +56,17 @@ namespace ImGuiScene
             }
         }
 
+        private string _imguiIniPath = null;
+        public string ImGuiIniPath
+        {
+            get { return _imguiIniPath; }
+            set
+            {
+                _imguiIniPath = value;
+                _imguiInput.SetIniPath(_imguiIniPath);
+            }
+        }
+
         public delegate void BuildUIDelegate();
 
         /// <summary>

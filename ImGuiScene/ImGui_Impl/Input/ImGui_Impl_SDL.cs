@@ -13,6 +13,7 @@ namespace ImGuiScene
     public class ImGui_Impl_SDL : IImGuiInputHandler
     {
         private IntPtr _platformNamePtr;
+        private IntPtr _iniPathPtr;
         private IntPtr _sdlWindow;
         private IntPtr[] _mouseCursors = new IntPtr[(int)ImGuiMouseCursor.COUNT];
         private bool[] _mousePressed = new bool[3];
@@ -114,6 +115,24 @@ namespace ImGuiScene
 
             UpdateMousePosAndButtons();
             UpdateMouseCursor();
+        }
+
+        public void SetIniPath(string iniPath)
+        {
+            // TODO: error/messaging when trying to set after first render?
+            if (iniPath != null)
+            {
+                if (_iniPathPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_iniPathPtr);
+                }
+
+                _iniPathPtr = Marshal.StringToHGlobalAnsi(iniPath);
+                unsafe
+                {
+                    ImGui.GetIO().NativePtr->IniFilename = (byte*)_iniPathPtr.ToPointer();
+                }
+            }
         }
 
         private void UpdateMousePosAndButtons()
@@ -277,8 +296,24 @@ namespace ImGuiScene
 
                 if (_platformNamePtr != IntPtr.Zero)
                 {
+                    unsafe
+                    {
+                        ImGui.GetIO().NativePtr->BackendPlatformName = null;
+                    }
+
                     Marshal.FreeHGlobal(_platformNamePtr);
                     _platformNamePtr = IntPtr.Zero;
+                }
+
+                if (_iniPathPtr != IntPtr.Zero)
+                {
+                    unsafe
+                    {
+                        ImGui.GetIO().NativePtr->IniFilename = null;
+                    }
+
+                    Marshal.FreeHGlobal(_iniPathPtr);
+                    _iniPathPtr = IntPtr.Zero;
                 }
 
                 disposedValue = true;
