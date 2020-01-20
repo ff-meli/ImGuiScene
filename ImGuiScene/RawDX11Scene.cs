@@ -115,6 +115,11 @@ namespace ImGuiScene
             ImGui_Input_Impl_Direct.Disable();
         }
 
+        public bool IsImGuiCursor(IntPtr hCursor)
+        {
+            return ImGui_Input_Impl_Direct.IsImGuiCursor(hCursor);
+        }
+
         public void TakeScreenshot(string path)
         {
             using (var backBuffer = this.swapChain.GetBackBuffer<Texture2D>(0))

@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace ImGuiScene
@@ -19,7 +20,6 @@ namespace ImGuiScene
         private static IntPtr _oldWndProcPtr;
         private static ImGuiMouseCursor _oldCursor = ImGuiMouseCursor.None;
         private static IntPtr[] _cursors;
-        private static bool _mouseCapturedLastFrame = false;
 
         public static void Init(IntPtr hWnd)
         {
@@ -98,30 +98,23 @@ namespace ImGuiScene
             _cursors = null;
         }
 
-        public static void Disable()
-        {
-            // TODO: may want to unhook wndproc entirely, but I'm not sure if repeatedly un- and re-hooking it
-            // will actually create a new window subclass each time
-            ImGui.GetIO().WantCaptureKeyboard = ImGui.GetIO().WantCaptureMouse = false;
-
-            // re-show the cursor if we hid it
-            // this will generally be true if Disable() was called when the mouse was over the ui
-            // TODO: should probably actually track cursor state directly to make this more generic
-            if (Win32.GetCursorInfo(out Win32.CURSORINFO pci))
-            {
-                if ((pci.flags & Win32Constants.CURSOR_SHOWING) == 0)
-                {
-                    Win32.ShowCursor(true);
-                }
-            }
-        }
-
         public static void Enable()
         {
             // for now, nothing to do
             // if Disable() unhooks wndproc, we should rehook it here
         }
 
+        public static void Disable()
+        {
+            // TODO: may want to unhook wndproc entirely, but I'm not sure if repeatedly un- and re-hooking it
+            // will actually create a new window subclass each time
+            ImGui.GetIO().WantCaptureKeyboard = ImGui.GetIO().WantCaptureMouse = false;
+        }
+
+        public static bool IsImGuiCursor(IntPtr hCursor)
+        {
+            return _cursors?.Contains(hCursor) ?? false;
+        }
 
         public static void NewFrame(int targetWidth, int targetHeight)
         {
@@ -144,21 +137,27 @@ namespace ImGuiScene
 
             UpdateMousePos();
 
+            // TODO: need to figure out some way to unify all this
+            // The bottom case works(?) if the caller hooks SetCursor, but otherwise causes fps issues
+            // The top case more or less works if we use ImGui's software cursor (and ideally hide the
+            // game's hardware cursor)
+            // It would be nice if hooking WM_SETCURSOR worked as it 'should' so that external hooking
+            // wasn't necessary
+
             // this is what imgui's example does, but it doesn't seem to work for us
             // this could be a timing issue.. or their logic could just be wrong for many applications
-            var cursor = io.MouseDrawCursor ? ImGuiMouseCursor.None : ImGui.GetMouseCursor();
-            if (_oldCursor != cursor)
-            {
-                _oldCursor = cursor;
-                UpdateMouseCursor();
-            }
-
-            // TODO: disabled due to seemingly causing framerate issues and flicker when vsync is disabled
-            // hacky attempt to make cursors work how I think they 'should'
-            //if (io.WantCaptureMouse || io.MouseDrawCursor)
+            //var cursor = io.MouseDrawCursor ? ImGuiMouseCursor.None : ImGui.GetMouseCursor();
+            //if (_oldCursor != cursor)
             //{
+            //    _oldCursor = cursor;
             //    UpdateMouseCursor();
             //}
+
+            // hacky attempt to make cursors work how I think they 'should'
+            if (io.WantCaptureMouse || io.MouseDrawCursor)
+            {
+                UpdateMouseCursor();
+            }
         }
 
         private static void UpdateMousePos()
@@ -203,16 +202,6 @@ namespace ImGuiScene
             {
                 Win32.SetCursor(_cursors[(int)cur]);
             }
-
-            if (io.WantCaptureMouse && !_mouseCapturedLastFrame)
-            {
-                Win32.ShowCursor(false);
-            }
-            else if (!io.WantCaptureMouse && _mouseCapturedLastFrame)
-            {
-                Win32.ShowCursor(true);
-            }
-            _mouseCapturedLastFrame = io.WantCaptureMouse;
 
             return true;
         }
