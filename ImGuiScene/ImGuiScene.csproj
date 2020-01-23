@@ -75,6 +75,7 @@
     <EmbeddedResource Include="resources\shaders\imgui-vertex.hlsl.bytes" LogicalName="imgui-vertex.hlsl.bytes" />
     <EmbeddedResource Include="resources\shaders\imgui-frag.glsl" LogicalName="imgui-frag.glsl" />
     <EmbeddedResource Include="resources\shaders\imgui-vertex.glsl" LogicalName="imgui-vertex.glsl" />
+    <EmbeddedResource Include="costura64\stbi.dll" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />

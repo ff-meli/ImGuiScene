@@ -5,5 +5,8 @@
       SDL2-CS
       ImGui.NET
     </ExcludeAssemblies>
+    <Unmanaged64Assemblies>
+      stbi
+    </Unmanaged64Assemblies>
   </Costura>
 </Weavers>
