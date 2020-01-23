@@ -1,9 +1,11 @@
 ﻿using ImGuiNET;
 using SharpDX;
+using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
+using StbiSharp;
 using System;
-
+using System.IO;
 using Device = SharpDX.Direct3D11.Device;
 
 namespace ImGuiScene
@@ -114,6 +116,67 @@ namespace ImGuiScene
         public bool IsImGuiCursor(IntPtr hCursor)
         {
             return this.imguiInput.IsImGuiCursor(hCursor);
+        }
+
+        public TextureWrap LoadImage(string path)
+        {
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            using (var ms = new MemoryStream())
+            {
+                fs.CopyTo(ms);
+                var image = Stbi.LoadFromMemory(ms, 4);
+                return LoadImage_Internal(image);
+            }
+        }
+
+        public TextureWrap LoadImage(byte[] imageBytes)
+        {
+            using (var ms = new MemoryStream(imageBytes))
+            {
+                var image = Stbi.LoadFromMemory(ms, 4);
+                return LoadImage_Internal(image);
+            }
+        }
+
+        private unsafe TextureWrap LoadImage_Internal(StbiImage image)
+        {
+            fixed (void *pixelData = image.Data)
+            {
+                return CreateTexture(pixelData, image.Width, image.Height, image.NumChannels);
+            }
+        }
+
+        private unsafe TextureWrap CreateTexture(void* pixelData, int width, int height, int bytesPerPixel)
+        {
+            ShaderResourceView resView = null;
+
+            var texDesc = new Texture2DDescription
+            {
+                Width = width,
+                Height = height,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = Format.R8G8B8A8_UNorm,    // TODO - support other formats?
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Immutable,
+                BindFlags = BindFlags.ShaderResource,
+                CpuAccessFlags = CpuAccessFlags.None,
+                OptionFlags = ResourceOptionFlags.None
+            };
+
+            using (var texture = new Texture2D(this.device, texDesc, new DataRectangle(new IntPtr(pixelData), width * bytesPerPixel)))
+            {
+                resView = new ShaderResourceView(this.device, texture, new ShaderResourceViewDescription
+                {
+                    Format = texDesc.Format,
+                    Dimension = ShaderResourceViewDimension.Texture2D,
+                    Texture2D = { MipLevels = texDesc.MipLevels }
+                });
+            }
+
+            // no sampler for now because the ImGui implementation we copied doesn't allow for changing it
+
+            return new D3DTextureWrap(resView, width, height);
         }
 
         public byte[] CaptureScreenshot()
