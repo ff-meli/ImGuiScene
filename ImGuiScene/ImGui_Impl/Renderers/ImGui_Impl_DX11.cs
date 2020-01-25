@@ -109,6 +109,8 @@ namespace ImGuiScene
         private StateBackup BackupRenderState()
         {
             var backup = new StateBackup();
+            backup.ScissorRects = new Rectangle[16];    // I couldn't find D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE as a SharpDX enum
+            backup.Viewports = new RawViewportF[16];
             backup.VertexBuffers = new Buffer[InputAssemblerStage.VertexInputResourceSlotCount];
             backup.VertexBufferStrides = new int[InputAssemblerStage.VertexInputResourceSlotCount];
             backup.VertexBufferOffsets = new int[InputAssemblerStage.VertexInputResourceSlotCount];
@@ -121,8 +123,8 @@ namespace ImGuiScene
 
             // RS
             backup.RS = _deviceContext.Rasterizer.State;
-            backup.ScissorRects = _deviceContext.Rasterizer.GetScissorRectangles<Rectangle>();
-            backup.Viewports = _deviceContext.Rasterizer.GetViewports<RawViewportF>();
+            _deviceContext.Rasterizer.GetScissorRectangles<Rectangle>(backup.ScissorRects);
+            _deviceContext.Rasterizer.GetViewports<RawViewportF>(backup.Viewports);
 
             // OM
             backup.BlendState = _deviceContext.OutputMerger.GetBlendState(out backup.BlendFactor, out backup.SampleMask);
