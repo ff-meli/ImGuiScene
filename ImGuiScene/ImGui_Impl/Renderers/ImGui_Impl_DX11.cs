@@ -45,83 +45,184 @@ namespace ImGuiScene
 
         private struct StateBackup
         {
+            // IA
+            public InputLayout InputLayout;
+            public PrimitiveTopology PrimitiveTopology;
+            public Buffer IndexBuffer;
+            public Format IndexBufferFormat;
+            public int IndexBufferOffset;
+            public Buffer[] VertexBuffers;
+            public int[] VertexBufferStrides;
+            public int[] VertexBufferOffsets;
+
+            // RS
+            public RasterizerState RS;
             public Rectangle[] ScissorRects;
             public RawViewportF[] Viewports;
-            public RasterizerState RS;
+            
+            // OM
             public BlendState BlendState;
             public RawColor4 BlendFactor;
             public int SampleMask;
             public DepthStencilState DepthStencilState;
             public int DepthStencilRef;
-            public ShaderResourceView[] PSShaderResource;
-            public SamplerState[] PSSampler;
-            public PixelShader PS;
+            public DepthStencilView DepthStencilView;
+            public RenderTargetView[] RenderTargetViews;
+
+            // VS
             public VertexShader VS;
+            public Buffer[] VSConstantBuffers;
+            public SamplerState[] VSSamplers;
+            public ShaderResourceView[] VSResourceViews;
+
+            // HS
+            public HullShader HS;
+            public Buffer[] HSConstantBuffers;
+            public SamplerState[] HSSamplers;
+            public ShaderResourceView[] HSResourceViews;
+
+            // DS
+            public DomainShader DS;
+            public Buffer[] DSConstantBuffers;
+            public SamplerState[] DSSamplers;
+            public ShaderResourceView[] DSResourceViews;
+
+            // GS
             public GeometryShader GS;
-            public Buffer[] VSConstantBuffer;
-            public PrimitiveTopology PrimitiveTopology;
-            public Buffer IndexBuffer;
-            public Format IndexBufferFormat;
-            public int IndexBufferOffset;
-            public Buffer[] VertexBuffer;
-            public int[] VertexBufferStride;
-            public int[] VertexBufferOffset;
-            public InputLayout InputLayout;
+            public Buffer[] GSConstantBuffers;
+            public SamplerState[] GSSamplers;
+            public ShaderResourceView[] GSResourceViews;
+
+            // PS
+            public PixelShader PS;
+            public Buffer[] PSConstantBuffers;
+            public SamplerState[] PSSamplers;
+            public ShaderResourceView[] PSResourceViews;
+
+            public ComputeShader CS;
+            public Buffer[] CSConstantBuffers;
+            public SamplerState[] CSSamplers;
+            public ShaderResourceView[] CSResourceViews;
+            public UnorderedAccessView[] CSUAVs;
         }
 
         private StateBackup BackupRenderState()
         {
             var backup = new StateBackup();
-            backup.ScissorRects = new Rectangle[16];
-            backup.Viewports = new RawViewportF[16];
-            backup.VertexBuffer = new Buffer[1];
-            backup.VertexBufferStride = new int[1];
-            backup.VertexBufferOffset = new int[1];
+            backup.VertexBuffers = new Buffer[InputAssemblerStage.VertexInputResourceSlotCount];
+            backup.VertexBufferStrides = new int[InputAssemblerStage.VertexInputResourceSlotCount];
+            backup.VertexBufferOffsets = new int[InputAssemblerStage.VertexInputResourceSlotCount];
 
-            _deviceContext.Rasterizer.GetScissorRectangles<Rectangle>(backup.ScissorRects);
-            _deviceContext.Rasterizer.GetViewports<RawViewportF>(backup.Viewports);
-            backup.RS = _deviceContext.Rasterizer.State;
-            backup.BlendState = _deviceContext.OutputMerger.BlendState;
-            backup.BlendFactor = _deviceContext.OutputMerger.BlendFactor;
-            backup.SampleMask = _deviceContext.OutputMerger.BlendSampleMask;
-            backup.DepthStencilState = _deviceContext.OutputMerger.DepthStencilState;
-            backup.DepthStencilRef = _deviceContext.OutputMerger.DepthStencilReference;
-            backup.PSShaderResource = _deviceContext.PixelShader.GetShaderResources(0, 1);
-            backup.PSSampler = _deviceContext.PixelShader.GetSamplers(0, 1);
-            backup.PS = _deviceContext.PixelShader.Get();
-            backup.VS = _deviceContext.VertexShader.Get();
-            backup.VSConstantBuffer = _deviceContext.VertexShader.GetConstantBuffers(0, 1);
-            backup.GS = _deviceContext.GeometryShader.Get();
-
-            backup.PrimitiveTopology = _deviceContext.InputAssembler.PrimitiveTopology;
-            _deviceContext.InputAssembler.GetIndexBuffer(out backup.IndexBuffer, out backup.IndexBufferFormat, out backup.IndexBufferOffset);
-            _deviceContext.InputAssembler.GetVertexBuffers(0, 1, backup.VertexBuffer, backup.VertexBufferStride, backup.VertexBufferOffset);
+            // IA
             backup.InputLayout = _deviceContext.InputAssembler.InputLayout;
+            _deviceContext.InputAssembler.GetIndexBuffer(out backup.IndexBuffer, out backup.IndexBufferFormat, out backup.IndexBufferOffset);
+            backup.PrimitiveTopology = _deviceContext.InputAssembler.PrimitiveTopology;
+            _deviceContext.InputAssembler.GetVertexBuffers(0, InputAssemblerStage.VertexInputResourceSlotCount, backup.VertexBuffers, backup.VertexBufferStrides, backup.VertexBufferOffsets);
+
+            // RS
+            backup.RS = _deviceContext.Rasterizer.State;
+            backup.ScissorRects = _deviceContext.Rasterizer.GetScissorRectangles<Rectangle>();
+            backup.Viewports = _deviceContext.Rasterizer.GetViewports<RawViewportF>();
+
+            // OM
+            backup.BlendState = _deviceContext.OutputMerger.GetBlendState(out backup.BlendFactor, out backup.SampleMask);
+            backup.DepthStencilState = _deviceContext.OutputMerger.GetDepthStencilState(out backup.DepthStencilRef);
+            backup.RenderTargetViews = _deviceContext.OutputMerger.GetRenderTargets(OutputMergerStage.SimultaneousRenderTargetCount, out backup.DepthStencilView);
+
+            // VS
+            backup.VS = _deviceContext.VertexShader.Get();
+            backup.VSSamplers = _deviceContext.VertexShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+            backup.VSConstantBuffers = _deviceContext.VertexShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+            backup.VSResourceViews = _deviceContext.VertexShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+
+            // HS
+            backup.HS = _deviceContext.HullShader.Get();
+            backup.HSSamplers = _deviceContext.HullShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+            backup.HSConstantBuffers = _deviceContext.HullShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+            backup.HSResourceViews = _deviceContext.HullShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+
+            // DS
+            backup.DS = _deviceContext.DomainShader.Get();
+            backup.DSSamplers = _deviceContext.DomainShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+            backup.DSConstantBuffers = _deviceContext.DomainShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+            backup.DSResourceViews = _deviceContext.DomainShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+
+            // GS
+            backup.GS = _deviceContext.GeometryShader.Get();
+            backup.GSSamplers = _deviceContext.GeometryShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+            backup.GSConstantBuffers = _deviceContext.GeometryShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+            backup.GSResourceViews = _deviceContext.GeometryShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+
+            // PS
+            backup.PS = _deviceContext.PixelShader.Get();
+            backup.PSSamplers = _deviceContext.PixelShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+            backup.PSConstantBuffers = _deviceContext.PixelShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+            backup.PSResourceViews = _deviceContext.PixelShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+            
+            // CS
+            backup.CS = _deviceContext.ComputeShader.Get();
+            backup.CSSamplers = _deviceContext.ComputeShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+            backup.CSConstantBuffers = _deviceContext.ComputeShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+            backup.CSResourceViews = _deviceContext.ComputeShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+            backup.CSUAVs = _deviceContext.ComputeShader.GetUnorderedAccessViews(0, ComputeShaderStage.UnorderedAccessViewSlotCount);   // should be register count and not slot, but the value is correct
 
             return backup;
         }
 
         private void RestoreRenderState(ref StateBackup oldState)
         {
+            // IA
+            _deviceContext.InputAssembler.InputLayout = oldState.InputLayout;
+            _deviceContext.InputAssembler.SetIndexBuffer(oldState.IndexBuffer, oldState.IndexBufferFormat, oldState.IndexBufferOffset);
+            _deviceContext.InputAssembler.PrimitiveTopology = oldState.PrimitiveTopology;
+            _deviceContext.InputAssembler.SetVertexBuffers(0, oldState.VertexBuffers, oldState.VertexBufferStrides, oldState.VertexBufferOffsets);
+
+            // RS
+            _deviceContext.Rasterizer.State = oldState.RS;
             _deviceContext.Rasterizer.SetScissorRectangles(oldState.ScissorRects);
             _deviceContext.Rasterizer.SetViewports(oldState.Viewports, oldState.Viewports.Length);
-            _deviceContext.Rasterizer.State = oldState.RS;
-            _deviceContext.OutputMerger.BlendState = oldState.BlendState;
-            _deviceContext.OutputMerger.BlendFactor = oldState.BlendFactor;
-            _deviceContext.OutputMerger.BlendSampleMask = oldState.SampleMask;
-            _deviceContext.OutputMerger.DepthStencilState = oldState.DepthStencilState;
-            _deviceContext.OutputMerger.DepthStencilReference = oldState.DepthStencilRef;
-            _deviceContext.PixelShader.SetShaderResource(0, oldState.PSShaderResource[0]);
-            _deviceContext.PixelShader.SetSampler(0, oldState.PSSampler[0]);
-            _deviceContext.PixelShader.Set(oldState.PS);
-            _deviceContext.VertexShader.Set(oldState.VS);
-            _deviceContext.VertexShader.SetConstantBuffer(0, oldState.VSConstantBuffer[0]);
-            _deviceContext.GeometryShader.Set(oldState.GS);
 
-            _deviceContext.InputAssembler.PrimitiveTopology = oldState.PrimitiveTopology;
-            _deviceContext.InputAssembler.SetIndexBuffer(oldState.IndexBuffer, oldState.IndexBufferFormat, oldState.IndexBufferOffset);
-            _deviceContext.InputAssembler.SetVertexBuffers(0, oldState.VertexBuffer, oldState.VertexBufferStride, oldState.VertexBufferOffset);
-            _deviceContext.InputAssembler.InputLayout = oldState.InputLayout;
+            // OM
+            _deviceContext.OutputMerger.SetBlendState(oldState.BlendState, oldState.BlendFactor, oldState.SampleMask);
+            _deviceContext.OutputMerger.SetDepthStencilState(oldState.DepthStencilState, oldState.DepthStencilRef);
+            _deviceContext.OutputMerger.SetRenderTargets(oldState.DepthStencilView, oldState.RenderTargetViews);
+
+            // VS
+            _deviceContext.VertexShader.Set(oldState.VS);
+            _deviceContext.VertexShader.SetSamplers(0, oldState.VSSamplers);
+            _deviceContext.VertexShader.SetConstantBuffers(0, oldState.VSConstantBuffers);
+            _deviceContext.VertexShader.SetShaderResources(0, oldState.VSResourceViews);
+
+            // HS
+            _deviceContext.HullShader.Set(oldState.HS);
+            _deviceContext.HullShader.SetSamplers(0, oldState.HSSamplers);
+            _deviceContext.HullShader.SetConstantBuffers(0, oldState.HSConstantBuffers);
+            _deviceContext.HullShader.SetShaderResources(0, oldState.HSResourceViews);
+
+            // DS
+            _deviceContext.DomainShader.Set(oldState.DS);
+            _deviceContext.DomainShader.SetSamplers(0, oldState.DSSamplers);
+            _deviceContext.DomainShader.SetConstantBuffers(0, oldState.DSConstantBuffers);
+            _deviceContext.DomainShader.SetShaderResources(0, oldState.DSResourceViews);
+
+            // GS
+            _deviceContext.GeometryShader.Set(oldState.GS);
+            _deviceContext.GeometryShader.SetSamplers(0, oldState.GSSamplers);
+            _deviceContext.GeometryShader.SetConstantBuffers(0, oldState.GSConstantBuffers);
+            _deviceContext.GeometryShader.SetShaderResources(0, oldState.GSResourceViews);
+
+            // PS
+            _deviceContext.PixelShader.Set(oldState.PS);
+            _deviceContext.PixelShader.SetSamplers(0, oldState.PSSamplers);
+            _deviceContext.PixelShader.SetConstantBuffers(0, oldState.PSConstantBuffers);
+            _deviceContext.PixelShader.SetShaderResources(0, oldState.PSResourceViews);
+
+            // CS
+            _deviceContext.ComputeShader.Set(oldState.CS);
+            _deviceContext.ComputeShader.SetSamplers(0, oldState.CSSamplers);
+            _deviceContext.ComputeShader.SetConstantBuffers(0, oldState.CSConstantBuffers);
+            _deviceContext.ComputeShader.SetShaderResources(0, oldState.CSResourceViews);
+            _deviceContext.ComputeShader.SetUnorderedAccessViews(0, oldState.CSUAVs);
         }
 
         public void SetupRenderState(ImDrawDataPtr drawData)
