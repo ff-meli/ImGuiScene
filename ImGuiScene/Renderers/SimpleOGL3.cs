@@ -57,6 +57,7 @@ namespace ImGuiScene
         private IntPtr _glContext;
         private DeviceContext _deviceContext;
         private SimpleSDLWindow _window;
+        private Gl.DebugProc _debugProc;
 
         // This isn't really a great place to do this
         internal struct WindowBufferConfig
@@ -106,7 +107,8 @@ namespace ImGuiScene
                 Gl.Enable((EnableCap)37600);    // GL_DEBUG_OUTPUT
                 Gl.Enable((EnableCap)33346);    // GL_DEBUG_OUTPUT_SYNCHRONOUS
 
-                Gl.DebugMessageCallback(GL_DebugCallback, IntPtr.Zero);
+                _debugProc = GL_DebugCallback;
+                Gl.DebugMessageCallback(_debugProc, IntPtr.Zero);
                 // ALL THE THINGS!
                 Gl.DebugMessageControl(DebugSource.DontCare, DebugType.DontCare, DebugSeverity.DontCare, new uint[] { }, true);
             }
@@ -159,8 +161,10 @@ namespace ImGuiScene
 
         private void GL_DebugCallback(DebugSource source, DebugType type, uint id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
         {
-            // string msg = Marshal.PtrToStringAnsi(message);
+            //string msg = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(message);
+            //Console.WriteLine(msg);
             // Could do something with this but it's more for breakpointing and looking into
+            // should probably have a user-provided callback
         }
 
         #region ImGui forwarding
