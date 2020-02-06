@@ -99,13 +99,14 @@ namespace ImGuiScene
             var flags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_HIDDEN;
             if (createInfo.Fullscreen)
             {
-                flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS | SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP;
+                flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS | SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
             }
 
             // Transparent windows are neat but almost certainly don't work as intended unless they are forced to remain on top of everything
+            // also don't show the window in the taskbar since this is functioning as an overlay
             if (createInfo.TransparentColor != null)
             {
-                flags |= SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
+                flags |= SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP | SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
             }
 
             return flags;
