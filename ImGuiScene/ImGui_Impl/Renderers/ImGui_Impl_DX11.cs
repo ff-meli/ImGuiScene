@@ -17,9 +17,10 @@ namespace ImGuiScene
     /// <summary>
     /// Currently undocumented because it is a horrible mess.
     /// A near-direct port of https://github.com/ocornut/imgui/blob/master/examples/imgui_impl_dx11.cpp
-    /// State backup was removed because ImGui does it poorly and SharpDX makes it worse; state caching should
-    /// be the responsibility of the main render application anyway (which for most uses of this class does not
-    /// exist at all)
+    /// State backup follows the general layout of imgui's sample (which is a mess), but has been rather
+    /// expanded to cover the vast majority of render state, following the example here
+    /// https://github.com/GPUOpen-LibrariesAndSDKs/CrossfireAPI11/blob/master/amd_lib/src/AMD_SaveRestoreState.cpp
+    /// Would be nice to organize it better, but it seems to work
     /// </summary>
     public class ImGui_Impl_DX11 : IImGuiRenderer
     {
