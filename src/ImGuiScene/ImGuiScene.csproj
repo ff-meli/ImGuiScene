@@ -81,16 +81,6 @@
     <Content Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\deps\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj">
-      <Project>{0483026e-c6ce-4b1a-aa68-46544c08140b}</Project>
-      <Name>ImGui.NET-472</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\deps\SDL2-CS\SDL2-CS.csproj">
-      <Project>{85480198-8711-4355-830e-72fd794ad3f6}</Project>
-      <Name>SDL2-CS</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Costura.Fody">
       <Version>4.1.0</Version>
     </PackageReference>
@@ -117,6 +107,16 @@
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>4.7.0</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj">
+      <Project>{0483026e-c6ce-4b1a-aa68-46544c08140b}</Project>
+      <Name>ImGui.NET-472</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\SDL2-CS\SDL2-CS.csproj">
+      <Project>{85480198-8711-4355-830e-72fd794ad3f6}</Project>
+      <Name>SDL2-CS</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

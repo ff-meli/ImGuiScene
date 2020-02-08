@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{618E0A53-8A16-41BD-BA51-0B2345A5B626}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ImGuiSceneTest</RootNamespace>
-    <AssemblyName>ImGuiSceneTest</AssemblyName>
+    <RootNamespace>ImGuiScene.Sample</RootNamespace>
+    <AssemblyName>ImGuiScene.Sample</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -52,11 +52,11 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\deps\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj">
+    <ProjectReference Include="..\..\lib\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj">
       <Project>{0483026e-c6ce-4b1a-aa68-46544c08140b}</Project>
       <Name>ImGui.NET-472</Name>
     </ProjectReference>
-    <ProjectReference Include="..\deps\SDL2-CS\SDL2-CS.csproj">
+    <ProjectReference Include="..\..\lib\SDL2-CS\SDL2-CS.csproj">
       <Project>{85480198-8711-4355-830e-72fd794ad3f6}</Project>
       <Name>SDL2-CS</Name>
     </ProjectReference>
