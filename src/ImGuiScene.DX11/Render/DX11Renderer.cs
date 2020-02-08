@@ -1,4 +1,5 @@
 ﻿using System;
+using ImGuiScene;
 using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
@@ -7,18 +8,13 @@ using SharpDX.Mathematics.Interop;
 
 using Device = SharpDX.Direct3D11.Device;
 
-namespace ImGuiScene
+namespace ImGuiScene.DX11
 {
     /// <summary>
     /// A simple wrapper for a minimal DirectX 11 renderer.  Consumers of this class will need to implement all actual pipeline and render logic externally.
     /// </summary>
-    public class SimpleD3D : IRenderer
+    public class DX11Renderer : IRenderer
     {
-        /// <summary>
-        /// The type (API/version) of this renderer
-        /// </summary>
-        public RendererFactory.RendererBackend Type => RendererFactory.RendererBackend.DirectX11;
-
         private RawColor4 _clearColor;
         /// <summary>
         /// The renderer clear color used by <see cref="Clear"/>
@@ -59,9 +55,14 @@ namespace ImGuiScene
         private RenderTargetView _backBufferView;
         private ImGui_Impl_DX11 _backend = new ImGui_Impl_DX11();
 
-        internal SimpleD3D(bool enableDebugging)
+        public DX11Renderer(bool enableDebugging = false)
         {
             Debuggable = enableDebugging;
+        }
+
+        public SimpleSDLWindow CreateWindow(WindowCreateInfo createInfo)
+        {
+            return new SimpleSDLWindow(this, createInfo);
         }
 
         /// <summary>
@@ -170,7 +171,7 @@ namespace ImGuiScene
 
             // no sampler for now because the ImGui implementation we copied doesn't allow for changing it
 
-            return new D3DTextureWrap(resView, width, height);
+            return new DX11TextureWrap(resView, width, height);
         }
 
         #region ImGui forwarding
@@ -227,7 +228,7 @@ namespace ImGuiScene
             }
         }
 
-        ~SimpleD3D()
+        ~DX11Renderer()
         {
             Dispose(false);
         }

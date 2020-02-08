@@ -1,6 +1,4 @@
-﻿using System;
-
-
+﻿
 namespace ImGuiScene
 {
     /// <summary>
@@ -39,29 +37,5 @@ namespace ImGuiScene
         /// Values are red, green, blue from 0 to 1.
         /// </summary>
         public float[] TransparentColor;
-    }
-
-    /// <summary>
-    /// Factory used to create a SimpleSDLWindow set up to work with the selected renderer.
-    /// </summary>
-    public class WindowFactory
-    {
-        /// <summary>
-        /// Creates a window configured for use with the specified renderer.
-        /// </summary>
-        /// <param name="renderer">The renderer to use with this window.</param>
-        /// <param name="createInfo">The <see cref="WindowCreateInfo"/> specifying the details of window creation.</param>
-        /// <returns></returns>
-        public static SimpleSDLWindow CreateForRenderer(IRenderer renderer, WindowCreateInfo createInfo)
-        {
-            switch (renderer.Type)
-            {
-                case RendererFactory.RendererBackend.OpenGL3:
-                    return new SDLWindowGL(renderer, createInfo);
-
-                default:
-                    return new SimpleSDLWindow(renderer, createInfo);
-            }
-        }
     }
 }

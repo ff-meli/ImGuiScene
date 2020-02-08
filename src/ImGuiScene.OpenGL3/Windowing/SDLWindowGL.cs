@@ -1,7 +1,7 @@
 ﻿using System;
 using static SDL2.SDL;
 
-namespace ImGuiScene
+namespace ImGuiScene.OpenGL3
 {
     /// <summary>
     /// OpenGL specialization of SimpleSDLWindow, for setting up additional necessary states during window creation.
@@ -18,7 +18,7 @@ namespace ImGuiScene
         /// <param name="renderer">The OpenGL renderer.</param>
         protected override void InitForRenderer(IRenderer renderer)
         {
-            var ogl = (SimpleOGL3)renderer;
+            var ogl = (OpenGL3Renderer)renderer;
 
             // normally you don't use forward compat, but ImGui does in their sample so...
             var contextFlags = (int)SDL_GLcontext.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;

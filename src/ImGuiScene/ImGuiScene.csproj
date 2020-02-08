@@ -51,30 +51,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="D3DTextureWrap.cs" />
     <Compile Include="FramerateLimit.cs" />
     <Compile Include="ImGui_Impl\Input\IImGuiInputHandler.cs" />
     <Compile Include="ImGui_Impl\Renderers\IImGuiRenderer.cs" />
-    <Compile Include="ImGui_Impl\Renderers\ImGui_Impl_OpenGL3.cs" />
     <Compile Include="ImGui_Impl\Input\ImGui_Input_Impl_Direct.cs" />
-    <Compile Include="RawDX11Scene.cs" />
     <Compile Include="Renderers\IRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ImGui_Impl\Renderers\ImGui_Impl_DX11.cs" />
     <Compile Include="ImGui_Impl\Input\ImGui_Impl_SDL.cs" />
-    <Compile Include="Renderers\RendererFactory.cs" />
     <Compile Include="Win32 Utils\Constants.cs" />
     <Compile Include="Win32 Utils\Win32.cs" />
-    <Compile Include="Windowing\WindowFactory.cs" />
-    <Compile Include="Windowing\SDLWindowGL.cs" />
-    <Compile Include="Renderers\SimpleD3D.cs" />
+    <Compile Include="Windowing\WindowCreateInfo.cs" />
     <Compile Include="SimpleImGuiScene.cs" />
-    <Compile Include="Renderers\SimpleOGL3.cs" />
     <Compile Include="Windowing\SimpleSDLWindow.cs" />
-    <EmbeddedResource Include="resources\shaders\imgui-frag.hlsl.bytes" LogicalName="imgui-frag.hlsl.bytes" />
-    <EmbeddedResource Include="resources\shaders\imgui-vertex.hlsl.bytes" LogicalName="imgui-vertex.hlsl.bytes" />
-    <EmbeddedResource Include="resources\shaders\imgui-frag.glsl" LogicalName="imgui-frag.glsl" />
-    <EmbeddedResource Include="resources\shaders\imgui-vertex.glsl" LogicalName="imgui-vertex.glsl" />
     <EmbeddedResource Include="costura64\stbi.dll" />
   </ItemGroup>
   <ItemGroup>
@@ -88,15 +76,6 @@
       <Version>6.0.5</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="OpenGL.Net">
-      <Version>0.8.4</Version>
-    </PackageReference>
-    <PackageReference Include="SharpDX.Direct3D11">
-      <Version>4.2.0</Version>
-    </PackageReference>
-    <PackageReference Include="SharpDX.Mathematics">
-      <Version>4.2.0</Version>
     </PackageReference>
     <PackageReference Include="StbiSharp">
       <Version>1.0.11</Version>

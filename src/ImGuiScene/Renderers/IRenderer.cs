@@ -11,11 +11,6 @@ namespace ImGuiScene
     public interface IRenderer : IDisposable
     {
         /// <summary>
-        /// The type (API/version) of this renderer.
-        /// </summary>
-        RendererFactory.RendererBackend Type { get; }
-
-        /// <summary>
         /// The color to use when clearing the window.
         /// </summary>
         Vector4 ClearColor { get; set; }
@@ -33,6 +28,8 @@ namespace ImGuiScene
         // TODO: explicit coupling to SDL windows for now
         // I don't want to add another layer of abstraction that isn't used
         // It would be nice to support arbitrary HWNDs though - DX can fine, but GL is a bit of a mess
+
+        SimpleSDLWindow CreateWindow(WindowCreateInfo createInfo);
 
         /// <summary>
         /// Attach this renderer to the specified window to begin rendering into it.

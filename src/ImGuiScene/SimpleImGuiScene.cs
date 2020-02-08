@@ -128,16 +128,15 @@ namespace ImGuiScene
         /// <param name="rendererBackend">Which rendering backend to use.</param>
         /// <param name="closeOverlayKey">Which <see cref="SDL_Scancode"/> to listen for in order to exit the scene.  Defaults to <see cref="SDL_Scancode.SDL_SCANCODE_ESCAPE"/>.</param>
         /// <param name="transparentColor">A float[4] representing the background window color that will be masked as transparent.  Defaults to solid black.</param>
-        /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
         /// <returns></returns>
-        public static SimpleImGuiScene CreateOverlay(RendererFactory.RendererBackend rendererBackend, SDL_Scancode closeOverlayKey = SDL_Scancode.SDL_SCANCODE_ESCAPE, float[] transparentColor = null, bool enableRenderDebugging = false)
+        public static SimpleImGuiScene CreateOverlay(IRenderer renderer, SDL_Scancode closeOverlayKey = SDL_Scancode.SDL_SCANCODE_ESCAPE, float[] transparentColor = null)
         {
-            var scene = new SimpleImGuiScene(rendererBackend, new WindowCreateInfo
+            var scene = new SimpleImGuiScene(renderer, new WindowCreateInfo
             {
                 Title = "ImGui Overlay",
                 Fullscreen = true,
                 TransparentColor = transparentColor ?? new float[] { 0, 0, 0, 0 }
-            }, enableRenderDebugging);
+            });
 
             // Add a simple handler for the close key, so user classes don't have to bother with events in most cases
             scene.OnSDLEvent += (ref SDL_Event sdlEvent) =>
@@ -156,15 +155,14 @@ namespace ImGuiScene
         /// </summary>
         /// <param name="backend">Which rendering backend to use.</param>
         /// <param name="createInfo">Creation details for the window.</param>
-        /// <param name="enableRenderDebugging">Whether to enable debugging of the renderer internals.  This will likely greatly impact performance and is not usually recommended.</param>
-        public SimpleImGuiScene(RendererFactory.RendererBackend rendererBackend, WindowCreateInfo createInfo, bool enableRenderDebugging = false)
+        public SimpleImGuiScene(IRenderer renderer, WindowCreateInfo createInfo)
         {
             // cache this off since it should hopefully never change
             // inverted and *1000 to reduce math in the render loop to compute frame times in ms at the loss of a tiny bit of precision
             _msPerTick = 1000.0 / SDL_GetPerformanceFrequency();
 
-            Renderer = RendererFactory.CreateRenderer(rendererBackend, enableRenderDebugging);
-            Window = WindowFactory.CreateForRenderer(Renderer, createInfo);
+            Renderer = renderer;
+            Window = Renderer.CreateWindow(createInfo);
 
             // This is the default beahvior anyway, but manually creating the object simplifies some checks
             FramerateLimit = new FramerateLimit(FramerateLimit.LimitType.Vsync);

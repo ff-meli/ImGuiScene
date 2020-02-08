@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{618E0A53-8A16-41BD-BA51-0B2345A5B626}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>ImGuiScene.Sample</RootNamespace>
-    <AssemblyName>ImGuiScene.Sample</AssemblyName>
+    <ProjectGuid>{0D5F4B4B-FBF4-475E-A5F1-1123636EA0D5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ImGuiScene.OpenGL3</RootNamespace>
+    <AssemblyName>ImGuiScene.OpenGL3</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,17 +21,16 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -45,11 +43,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="OpenGL3TextureWrap.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ImGui_Impl\Render\ImGui_Impl_OpenGL3.cs" />
+    <Compile Include="Render\OpenGL3Renderer.cs" />
+    <Compile Include="Windowing\SDLWindowGL.cs" />
+    <EmbeddedResource Include="resources\shaders\imgui-frag.glsl" LogicalName="imgui-frag.glsl" />
+    <EmbeddedResource Include="resources\shaders\imgui-vertex.glsl" LogicalName="imgui-vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <PackageReference Include="OpenGL.Net">
+      <Version>0.8.4</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\lib\ImGui.NET\src\ImGui.NET-472\ImGui.NET-472.csproj">
@@ -59,10 +64,6 @@
     <ProjectReference Include="..\..\lib\SDL2-CS\SDL2-CS.csproj">
       <Project>{85480198-8711-4355-830e-72fd794ad3f6}</Project>
       <Name>SDL2-CS</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ImGuiScene.DX11\ImGuiScene.DX11.csproj">
-      <Project>{c179a083-ac0e-4570-96d6-d175dc3eff78}</Project>
-      <Name>ImGuiScene.DX11</Name>
     </ProjectReference>
     <ProjectReference Include="..\ImGuiScene\ImGuiScene.csproj">
       <Project>{c0e7e797-4fbf-4f46-bc57-463f3719ba7a}</Project>

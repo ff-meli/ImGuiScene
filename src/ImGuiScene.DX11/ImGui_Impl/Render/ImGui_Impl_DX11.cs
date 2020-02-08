@@ -12,7 +12,7 @@ using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
 
-namespace ImGuiScene
+namespace ImGuiScene.DX11
 {
     /// <summary>
     /// Currently undocumented because it is a horrible mess.

@@ -8,7 +8,7 @@ using System;
 using System.IO;
 using Device = SharpDX.Direct3D11.Device;
 
-namespace ImGuiScene
+namespace ImGuiScene.DX11
 {
     // This class will likely eventually be unified a bit more with other scenes, but for
     // now it should be directly useable
@@ -156,7 +156,7 @@ namespace ImGuiScene
                 Height = height,
                 MipLevels = 1,
                 ArraySize = 1,
-                Format = Format.R8G8B8A8_UNorm,    // TODO - support other formats?
+                Format = Format.R8G8B8A8_UNorm,
                 SampleDescription = new SampleDescription(1, 0),
                 Usage = ResourceUsage.Immutable,
                 BindFlags = BindFlags.ShaderResource,
@@ -176,7 +176,7 @@ namespace ImGuiScene
 
             // no sampler for now because the ImGui implementation we copied doesn't allow for changing it
 
-            return new D3DTextureWrap(resView, width, height);
+            return new DX11TextureWrap(resView, width, height);
         }
 
         public byte[] CaptureScreenshot()

@@ -52,7 +52,7 @@ namespace ImGuiScene
         /// </summary>
         /// <param name="renderer">The renderer to attach to this window.</param>
         /// <param name="createInfo">The creation parameters to use when building this window.</param>
-        internal SimpleSDLWindow(IRenderer renderer, WindowCreateInfo createInfo)
+        public SimpleSDLWindow(IRenderer renderer, WindowCreateInfo createInfo)
         {
             if (SDL_Init(SDL_INIT_VIDEO) != 0)
             {
@@ -174,7 +174,7 @@ namespace ImGuiScene
             }
         }
 
-        internal void Show()
+        public void Show()
         {
             SDL_ShowWindow(Window);
         }

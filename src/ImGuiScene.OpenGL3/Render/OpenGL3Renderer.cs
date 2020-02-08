@@ -3,20 +3,15 @@ using System;
 using System.Numerics;
 using static SDL2.SDL;
 
-namespace ImGuiScene
+namespace ImGuiScene.OpenGL3
 {
     /// <summary>
     /// A simple wrapper for a minimal OpenGL 3.2 renderer.  Consumers of this class will need to implement all actual pipeline and render logic externally.
     /// </summary>
-    public class SimpleOGL3 : IRenderer
+    public class OpenGL3Renderer : IRenderer
     {
         public int ContextMajorVersion => 3;
         public int ContextMinorVersion => 2;
-
-        /// <summary>
-        /// The type (API/version) of this renderer
-        /// </summary>
-        public RendererFactory.RendererBackend Type => RendererFactory.RendererBackend.OpenGL3;
 
         private Vector4 _clearColor;
         /// <summary>
@@ -80,9 +75,14 @@ namespace ImGuiScene
             StencilBits = 8
         };
 
-        internal SimpleOGL3(bool enableDebugging = false)
+        public OpenGL3Renderer(bool enableDebugging = false)
         {
             Debuggable = enableDebugging;
+        }
+
+        public SimpleSDLWindow CreateWindow(WindowCreateInfo createInfo)
+        {
+            return new SDLWindowGL(this, createInfo);
         }
 
         /// <summary>
@@ -213,69 +213,12 @@ namespace ImGuiScene
             }
         }
 
-        ~SimpleOGL3()
+        ~OpenGL3Renderer()
         {
             Dispose(false);
         }
 
         // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-    }
-
-    /// <summary>
-    /// OpenGL 3 Implementation of <see cref="TextureWrap"/>.
-    /// Provides a simple wrapped view of the disposeable resource as well as the handle for ImGui.
-    /// </summary>
-    public class GLTextureWrap : TextureWrap
-    {
-        public IntPtr ImGuiHandle { get; }
-        public int Width { get; }
-        public int Height { get; }
-
-        public GLTextureWrap(uint texture, int width, int height)
-        {
-            ImGuiHandle = (IntPtr)texture;
-            Width = width;
-            Height = height;
-        }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-
-                var textureId = (uint)ImGuiHandle;
-                if (textureId != 0)
-                {
-                    Gl.DeleteTextures(textureId);
-                }
-
-                disposedValue = true;
-            }
-        }
-
-        ~GLTextureWrap()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

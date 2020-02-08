@@ -8,7 +8,7 @@ using System.Text;
 using ImGuiNET;
 using OpenGL;
 
-namespace ImGuiScene
+namespace ImGuiScene.OpenGL3
 {
     /// <summary>
     /// Currently undocumented because it is a horrible mess.

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ImGuiNET;
+﻿using ImGuiNET;
 using ImGuiScene;
+using ImGuiScene.DX11;
 
 namespace ImGuiSceneTest
 {
@@ -12,7 +8,7 @@ namespace ImGuiSceneTest
     {
         static void Main(string[] args)
         {
-            using (var scene = SimpleImGuiScene.CreateOverlay(RendererFactory.RendererBackend.DirectX11))
+            using (var scene = SimpleImGuiScene.CreateOverlay(new DX11Renderer()))
             {
                 scene.OnBuildUI += ImGui.ShowDemoWindow;
                 scene.Run();
