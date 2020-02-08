@@ -13,7 +13,7 @@ namespace ImGuiScene
     /// 
     /// Internally this uses SDL and DirectX 11 or OpenGL 3.2.  Rendering is tied to vsync.
     /// </summary>
-    public class SimpleImGuiScene : IDisposable
+    public class SimpleImGuiScene : IScene
     {
         /// <summary>
         /// The main application container window where we do all our rendering and input processing.
@@ -67,12 +67,10 @@ namespace ImGuiScene
             }
         }
 
-        public delegate void BuildUIDelegate();
-
         /// <summary>
         /// User methods invoked every ImGui frame to construct custom UIs.
         /// </summary>
-        public BuildUIDelegate OnBuildUI;
+        public event BuildUIDelegate OnBuildUI;
 
         private bool _pauseWhenUnfocused;
         /// <summary>
@@ -245,7 +243,7 @@ namespace ImGuiScene
         /// Performs a single-frame update of ImGui and renders it to the window.
         /// This method does not check any quit conditions.
         /// </summary>
-        public void Update()
+        public void Frame()
         {
             var frameStart = SDL_GetPerformanceCounter();
             // var fps = 1000.0 / ((frameStart - _lastFrameCounter) * _msPerTick);
@@ -297,7 +295,7 @@ namespace ImGuiScene
             // while ShouldQuit is used for external/application close requests
             while (!Window.WantsClose && !ShouldQuit)
             {
-                Update();
+                Frame();
             }
         }
 

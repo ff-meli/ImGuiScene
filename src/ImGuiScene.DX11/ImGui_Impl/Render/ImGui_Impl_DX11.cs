@@ -228,7 +228,7 @@ namespace ImGuiScene.DX11
             _deviceContext.ComputeShader.SetUnorderedAccessViews(0, oldState.CSUAVs);
         }
 
-        public void SetupRenderState(ImDrawDataPtr drawData)
+        private void SetupRenderState(ImDrawDataPtr drawData)
         {
             // Setup viewport
             _deviceContext.Rasterizer.SetViewport(0, 0, drawData.DisplaySize.X, drawData.DisplaySize.Y);
@@ -401,7 +401,7 @@ namespace ImGuiScene.DX11
             RestoreRenderState(ref oldState);
         }
 
-        public void CreateFontsTexture()
+        private void CreateFontsTexture()
         {
             var io = ImGui.GetIO();
 
@@ -452,7 +452,7 @@ namespace ImGuiScene.DX11
             });
         }
 
-        public bool CreateDeviceObjects()
+        private bool CreateDeviceObjects()
         {
             if (_device == null)
             {
@@ -554,7 +554,7 @@ namespace ImGuiScene.DX11
             return true;
         }
 
-        public void InvalidateDeviceObjects()
+        private void InvalidateDeviceObjects()
         {
             if (_device == null)
             {

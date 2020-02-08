@@ -151,7 +151,7 @@ namespace ImGuiScene.DX11
                 Height = height,
                 MipLevels = 1,
                 ArraySize = 1,
-                Format = Format.R8G8B8A8_UNorm,    // TODO - support other formats?
+                Format = Format.R8G8B8A8_UNorm,
                 SampleDescription = new SampleDescription(1, 0),
                 Usage = ResourceUsage.Immutable,
                 BindFlags = BindFlags.ShaderResource,

@@ -20,11 +20,6 @@ namespace ImGuiScene
         /// </summary>
         bool Vsync { get; set; }
 
-        /// <summary>
-        /// Whether this renderer was created with debuggable state.
-        /// </summary>
-        bool Debuggable { get; }
-
         // TODO: explicit coupling to SDL windows for now
         // I don't want to add another layer of abstraction that isn't used
         // It would be nice to support arbitrary HWNDs though - DX can fine, but GL is a bit of a mess

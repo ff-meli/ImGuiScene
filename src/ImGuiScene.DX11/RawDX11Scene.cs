@@ -12,7 +12,7 @@ namespace ImGuiScene.DX11
 {
     // This class will likely eventually be unified a bit more with other scenes, but for
     // now it should be directly useable
-    public sealed class RawDX11Scene : IDisposable
+    public sealed class RawDX11Scene : IScene
     {
         private Device device;
         private SwapChain swapChain;
@@ -25,12 +25,10 @@ namespace ImGuiScene.DX11
         private ImGui_Impl_DX11 imguiRenderer;
         private ImGui_Input_Impl_Direct imguiInput;
 
-        public delegate void BuildUIDelegate();
-
         /// <summary>
         /// User methods invoked every ImGui frame to construct custom UIs.
         /// </summary>
-        public BuildUIDelegate OnBuildUI;
+        public event BuildUIDelegate OnBuildUI;
 
         private string imguiIniPath = null;
         public string ImGuiIniPath
@@ -95,7 +93,7 @@ namespace ImGuiScene.DX11
             this.imguiRenderer.Init(this.device, this.deviceContext);
         }
 
-        public void Render()
+        public void Frame()
         {
             this.deviceContext.OutputMerger.SetRenderTargets(this.rtv);
 
@@ -113,6 +111,7 @@ namespace ImGuiScene.DX11
             this.deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
         }
 
+        // TODO: move this out somehow
         public bool IsImGuiCursor(IntPtr hCursor)
         {
             return this.imguiInput.IsImGuiCursor(hCursor);

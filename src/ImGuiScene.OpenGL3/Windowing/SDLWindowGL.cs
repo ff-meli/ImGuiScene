@@ -22,7 +22,7 @@ namespace ImGuiScene.OpenGL3
 
             // normally you don't use forward compat, but ImGui does in their sample so...
             var contextFlags = (int)SDL_GLcontext.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
-            if (renderer.Debuggable)
+            if (ogl.Debuggable)
             {
                 contextFlags |= (int)SDL_GLcontext.SDL_GL_CONTEXT_DEBUG_FLAG;
             }
