@@ -44,8 +44,11 @@ namespace ImGuiScene
         // so we don't make a temporary object every frame
         private RawColor4 _blendColor = new RawColor4(0, 0, 0, 0);
 
-        private struct StateBackup
+        // TODO: I'll clean this up better later
+        private class StateBackup : IDisposable
         {
+            private DeviceContext deviceContext;
+
             // IA
             public InputLayout InputLayout;
             public PrimitiveTopology PrimitiveTopology;
@@ -60,7 +63,7 @@ namespace ImGuiScene
             public RasterizerState RS;
             public Rectangle[] ScissorRects;
             public RawViewportF[] Viewports;
-            
+
             // OM
             public BlendState BlendState;
             public RawColor4 BlendFactor;
@@ -105,127 +108,173 @@ namespace ImGuiScene
             public SamplerState[] CSSamplers;
             public ShaderResourceView[] CSResourceViews;
             public UnorderedAccessView[] CSUAVs;
-        }
 
-        private StateBackup BackupRenderState()
-        {
-            var backup = new StateBackup();
-            backup.ScissorRects = new Rectangle[16];    // I couldn't find D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE as a SharpDX enum
-            backup.Viewports = new RawViewportF[16];
-            backup.VertexBuffers = new Buffer[InputAssemblerStage.VertexInputResourceSlotCount];
-            backup.VertexBufferStrides = new int[InputAssemblerStage.VertexInputResourceSlotCount];
-            backup.VertexBufferOffsets = new int[InputAssemblerStage.VertexInputResourceSlotCount];
+            private bool disposedValue = false; // To detect redundant calls
 
-            // IA
-            backup.InputLayout = _deviceContext.InputAssembler.InputLayout;
-            _deviceContext.InputAssembler.GetIndexBuffer(out backup.IndexBuffer, out backup.IndexBufferFormat, out backup.IndexBufferOffset);
-            backup.PrimitiveTopology = _deviceContext.InputAssembler.PrimitiveTopology;
-            _deviceContext.InputAssembler.GetVertexBuffers(0, InputAssemblerStage.VertexInputResourceSlotCount, backup.VertexBuffers, backup.VertexBufferStrides, backup.VertexBufferOffsets);
+            public StateBackup(DeviceContext deviceContext)
+            {
+                this.deviceContext = deviceContext;
 
-            // RS
-            backup.RS = _deviceContext.Rasterizer.State;
-            _deviceContext.Rasterizer.GetScissorRectangles<Rectangle>(backup.ScissorRects);
-            _deviceContext.Rasterizer.GetViewports<RawViewportF>(backup.Viewports);
+                this.ScissorRects = new Rectangle[16];    // I couldn't find D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE as a SharpDX enum
+                this.Viewports = new RawViewportF[16];
+                this.VertexBuffers = new Buffer[InputAssemblerStage.VertexInputResourceSlotCount];
+                this.VertexBufferStrides = new int[InputAssemblerStage.VertexInputResourceSlotCount];
+                this.VertexBufferOffsets = new int[InputAssemblerStage.VertexInputResourceSlotCount];
 
-            // OM
-            backup.BlendState = _deviceContext.OutputMerger.GetBlendState(out backup.BlendFactor, out backup.SampleMask);
-            backup.DepthStencilState = _deviceContext.OutputMerger.GetDepthStencilState(out backup.DepthStencilRef);
-            backup.RenderTargetViews = _deviceContext.OutputMerger.GetRenderTargets(OutputMergerStage.SimultaneousRenderTargetCount, out backup.DepthStencilView);
+                // IA
+                this.InputLayout = deviceContext.InputAssembler.InputLayout;
+                this.deviceContext.InputAssembler.GetIndexBuffer(out this.IndexBuffer, out this.IndexBufferFormat, out this.IndexBufferOffset);
+                this.PrimitiveTopology = this.deviceContext.InputAssembler.PrimitiveTopology;
+                this.deviceContext.InputAssembler.GetVertexBuffers(0, InputAssemblerStage.VertexInputResourceSlotCount, this.VertexBuffers, this.VertexBufferStrides, this.VertexBufferOffsets);
 
-            // VS
-            backup.VS = _deviceContext.VertexShader.Get();
-            backup.VSSamplers = _deviceContext.VertexShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
-            backup.VSConstantBuffers = _deviceContext.VertexShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
-            backup.VSResourceViews = _deviceContext.VertexShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+                // RS
+                this.RS = this.deviceContext.Rasterizer.State;
+                this.deviceContext.Rasterizer.GetScissorRectangles<Rectangle>(this.ScissorRects);
+                this.deviceContext.Rasterizer.GetViewports<RawViewportF>(this.Viewports);
 
-            // HS
-            backup.HS = _deviceContext.HullShader.Get();
-            backup.HSSamplers = _deviceContext.HullShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
-            backup.HSConstantBuffers = _deviceContext.HullShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
-            backup.HSResourceViews = _deviceContext.HullShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+                // OM
+                this.BlendState = this.deviceContext.OutputMerger.GetBlendState(out this.BlendFactor, out this.SampleMask);
+                this.DepthStencilState = this.deviceContext.OutputMerger.GetDepthStencilState(out this.DepthStencilRef);
+                this.RenderTargetViews = this.deviceContext.OutputMerger.GetRenderTargets(OutputMergerStage.SimultaneousRenderTargetCount, out this.DepthStencilView);
 
-            // DS
-            backup.DS = _deviceContext.DomainShader.Get();
-            backup.DSSamplers = _deviceContext.DomainShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
-            backup.DSConstantBuffers = _deviceContext.DomainShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
-            backup.DSResourceViews = _deviceContext.DomainShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+                // VS
+                this.VS = this.deviceContext.VertexShader.Get();
+                this.VSSamplers = this.deviceContext.VertexShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+                this.VSConstantBuffers = this.deviceContext.VertexShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+                this.VSResourceViews = this.deviceContext.VertexShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
 
-            // GS
-            backup.GS = _deviceContext.GeometryShader.Get();
-            backup.GSSamplers = _deviceContext.GeometryShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
-            backup.GSConstantBuffers = _deviceContext.GeometryShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
-            backup.GSResourceViews = _deviceContext.GeometryShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+                // HS
+                this.HS = this.deviceContext.HullShader.Get();
+                this.HSSamplers = this.deviceContext.HullShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+                this.HSConstantBuffers = this.deviceContext.HullShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+                this.HSResourceViews = this.deviceContext.HullShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
 
-            // PS
-            backup.PS = _deviceContext.PixelShader.Get();
-            backup.PSSamplers = _deviceContext.PixelShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
-            backup.PSConstantBuffers = _deviceContext.PixelShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
-            backup.PSResourceViews = _deviceContext.PixelShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
-            
-            // CS
-            backup.CS = _deviceContext.ComputeShader.Get();
-            backup.CSSamplers = _deviceContext.ComputeShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
-            backup.CSConstantBuffers = _deviceContext.ComputeShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
-            backup.CSResourceViews = _deviceContext.ComputeShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
-            backup.CSUAVs = _deviceContext.ComputeShader.GetUnorderedAccessViews(0, ComputeShaderStage.UnorderedAccessViewSlotCount);   // should be register count and not slot, but the value is correct
+                // DS
+                this.DS = this.deviceContext.DomainShader.Get();
+                this.DSSamplers = this.deviceContext.DomainShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+                this.DSConstantBuffers = this.deviceContext.DomainShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+                this.DSResourceViews = this.deviceContext.DomainShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
 
-            return backup;
-        }
+                // GS
+                this.GS = this.deviceContext.GeometryShader.Get();
+                this.GSSamplers = this.deviceContext.GeometryShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+                this.GSConstantBuffers = this.deviceContext.GeometryShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+                this.GSResourceViews = this.deviceContext.GeometryShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
 
-        private void RestoreRenderState(ref StateBackup oldState)
-        {
-            // IA
-            _deviceContext.InputAssembler.InputLayout = oldState.InputLayout;
-            _deviceContext.InputAssembler.SetIndexBuffer(oldState.IndexBuffer, oldState.IndexBufferFormat, oldState.IndexBufferOffset);
-            _deviceContext.InputAssembler.PrimitiveTopology = oldState.PrimitiveTopology;
-            _deviceContext.InputAssembler.SetVertexBuffers(0, oldState.VertexBuffers, oldState.VertexBufferStrides, oldState.VertexBufferOffsets);
+                // PS
+                this.PS = this.deviceContext.PixelShader.Get();
+                this.PSSamplers = this.deviceContext.PixelShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+                this.PSConstantBuffers = this.deviceContext.PixelShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+                this.PSResourceViews = this.deviceContext.PixelShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
 
-            // RS
-            _deviceContext.Rasterizer.State = oldState.RS;
-            _deviceContext.Rasterizer.SetScissorRectangles(oldState.ScissorRects);
-            _deviceContext.Rasterizer.SetViewports(oldState.Viewports, oldState.Viewports.Length);
+                // CS
+                this.CS = this.deviceContext.ComputeShader.Get();
+                this.CSSamplers = this.deviceContext.ComputeShader.GetSamplers(0, CommonShaderStage.SamplerSlotCount);
+                this.CSConstantBuffers = this.deviceContext.ComputeShader.GetConstantBuffers(0, CommonShaderStage.ConstantBufferApiSlotCount);
+                this.CSResourceViews = this.deviceContext.ComputeShader.GetShaderResources(0, CommonShaderStage.InputResourceSlotCount);
+                this.CSUAVs = this.deviceContext.ComputeShader.GetUnorderedAccessViews(0, ComputeShaderStage.UnorderedAccessViewSlotCount);   // should be register count and not slot, but the value is correct
+            }
 
-            // OM
-            _deviceContext.OutputMerger.SetBlendState(oldState.BlendState, oldState.BlendFactor, oldState.SampleMask);
-            _deviceContext.OutputMerger.SetDepthStencilState(oldState.DepthStencilState, oldState.DepthStencilRef);
-            _deviceContext.OutputMerger.SetRenderTargets(oldState.DepthStencilView, oldState.RenderTargetViews);
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!disposedValue)
+                {
+                    if (disposing)
+                    {
+                        // TODO: dispose managed state (managed objects).
+                    }
 
-            // VS
-            _deviceContext.VertexShader.Set(oldState.VS);
-            _deviceContext.VertexShader.SetSamplers(0, oldState.VSSamplers);
-            _deviceContext.VertexShader.SetConstantBuffers(0, oldState.VSConstantBuffers);
-            _deviceContext.VertexShader.SetShaderResources(0, oldState.VSResourceViews);
+                    // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                    // TODO: set large fields to null.
 
-            // HS
-            _deviceContext.HullShader.Set(oldState.HS);
-            _deviceContext.HullShader.SetSamplers(0, oldState.HSSamplers);
-            _deviceContext.HullShader.SetConstantBuffers(0, oldState.HSConstantBuffers);
-            _deviceContext.HullShader.SetShaderResources(0, oldState.HSResourceViews);
+                    // IA
+                    this.deviceContext.InputAssembler.InputLayout = this.InputLayout;
+                    this.deviceContext.InputAssembler.SetIndexBuffer(this.IndexBuffer, this.IndexBufferFormat, this.IndexBufferOffset);
+                    this.deviceContext.InputAssembler.PrimitiveTopology = this.PrimitiveTopology;
+                    this.deviceContext.InputAssembler.SetVertexBuffers(0, this.VertexBuffers, this.VertexBufferStrides, this.VertexBufferOffsets);
 
-            // DS
-            _deviceContext.DomainShader.Set(oldState.DS);
-            _deviceContext.DomainShader.SetSamplers(0, oldState.DSSamplers);
-            _deviceContext.DomainShader.SetConstantBuffers(0, oldState.DSConstantBuffers);
-            _deviceContext.DomainShader.SetShaderResources(0, oldState.DSResourceViews);
+                    // RS
+                    this.deviceContext.Rasterizer.State = this.RS;
+                    this.deviceContext.Rasterizer.SetScissorRectangles(this.ScissorRects);
+                    this.deviceContext.Rasterizer.SetViewports(this.Viewports, this.Viewports.Length);
 
-            // GS
-            _deviceContext.GeometryShader.Set(oldState.GS);
-            _deviceContext.GeometryShader.SetSamplers(0, oldState.GSSamplers);
-            _deviceContext.GeometryShader.SetConstantBuffers(0, oldState.GSConstantBuffers);
-            _deviceContext.GeometryShader.SetShaderResources(0, oldState.GSResourceViews);
+                    // OM
+                    this.deviceContext.OutputMerger.SetBlendState(this.BlendState, this.BlendFactor, this.SampleMask);
+                    this.deviceContext.OutputMerger.SetDepthStencilState(this.DepthStencilState, this.DepthStencilRef);
+                    this.deviceContext.OutputMerger.SetRenderTargets(this.DepthStencilView, this.RenderTargetViews);
 
-            // PS
-            _deviceContext.PixelShader.Set(oldState.PS);
-            _deviceContext.PixelShader.SetSamplers(0, oldState.PSSamplers);
-            _deviceContext.PixelShader.SetConstantBuffers(0, oldState.PSConstantBuffers);
-            _deviceContext.PixelShader.SetShaderResources(0, oldState.PSResourceViews);
+                    // VS
+                    this.deviceContext.VertexShader.Set(this.VS);
+                    this.deviceContext.VertexShader.SetSamplers(0, this.VSSamplers);
+                    this.deviceContext.VertexShader.SetConstantBuffers(0, this.VSConstantBuffers);
+                    this.deviceContext.VertexShader.SetShaderResources(0, this.VSResourceViews);
 
-            // CS
-            _deviceContext.ComputeShader.Set(oldState.CS);
-            _deviceContext.ComputeShader.SetSamplers(0, oldState.CSSamplers);
-            _deviceContext.ComputeShader.SetConstantBuffers(0, oldState.CSConstantBuffers);
-            _deviceContext.ComputeShader.SetShaderResources(0, oldState.CSResourceViews);
-            _deviceContext.ComputeShader.SetUnorderedAccessViews(0, oldState.CSUAVs);
+                    // HS
+                    this.deviceContext.HullShader.Set(this.HS);
+                    this.deviceContext.HullShader.SetSamplers(0, this.HSSamplers);
+                    this.deviceContext.HullShader.SetConstantBuffers(0, this.HSConstantBuffers);
+                    this.deviceContext.HullShader.SetShaderResources(0, this.HSResourceViews);
+
+                    // DS
+                    this.deviceContext.DomainShader.Set(this.DS);
+                    this.deviceContext.DomainShader.SetSamplers(0, this.DSSamplers);
+                    this.deviceContext.DomainShader.SetConstantBuffers(0, this.DSConstantBuffers);
+                    this.deviceContext.DomainShader.SetShaderResources(0, this.DSResourceViews);
+
+                    // GS
+                    this.deviceContext.GeometryShader.Set(this.GS);
+                    this.deviceContext.GeometryShader.SetSamplers(0, this.GSSamplers);
+                    this.deviceContext.GeometryShader.SetConstantBuffers(0, this.GSConstantBuffers);
+                    this.deviceContext.GeometryShader.SetShaderResources(0, this.GSResourceViews);
+
+                    // PS
+                    this.deviceContext.PixelShader.Set(this.PS);
+                    this.deviceContext.PixelShader.SetSamplers(0, this.PSSamplers);
+                    this.deviceContext.PixelShader.SetConstantBuffers(0, this.PSConstantBuffers);
+                    this.deviceContext.PixelShader.SetShaderResources(0, this.PSResourceViews);
+
+                    // CS
+                    this.deviceContext.ComputeShader.Set(this.CS);
+                    this.deviceContext.ComputeShader.SetSamplers(0, this.CSSamplers);
+                    this.deviceContext.ComputeShader.SetConstantBuffers(0, this.CSConstantBuffers);
+                    this.deviceContext.ComputeShader.SetShaderResources(0, this.CSResourceViews);
+                    this.deviceContext.ComputeShader.SetUnorderedAccessViews(0, this.CSUAVs);
+
+                    // force free these references immediately, or they hang around too long and calls
+                    // to swapchain->ResizeBuffers() will fail due to outstanding references
+                    // We could force free other things too, but nothing else should cause errors
+                    // and these should get gc'd and disposed eventually
+                    foreach (var rtv in this.RenderTargetViews)
+                    {
+                        rtv?.Dispose();
+                    }
+
+                    this.RenderTargetViews = null;
+                    this.DepthStencilView = null;
+                    this.VSResourceViews = null;
+                    this.HSResourceViews = null;
+                    this.DSResourceViews = null;
+                    this.GSResourceViews = null;
+                    this.PSResourceViews = null;
+                    this.CSResourceViews = null;
+
+                    disposedValue = true;
+                }
+            }
+
+            ~StateBackup()
+            {
+                // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+                Dispose(false);
+            }
+
+            // This code added to correctly implement the disposable pattern.
+            public void Dispose()
+            {
+                // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
         }
 
         public void SetupRenderState(ImDrawDataPtr drawData)
@@ -268,7 +317,7 @@ namespace ImGuiScene
                 return;
             }
 
-            //drawData.ScaleClipRects(ImGui.GetIO().DisplayFramebufferScale);
+            // drawData.ScaleClipRects(ImGui.GetIO().DisplayFramebufferScale);
 
             // Create and grow vertex/index buffers if needed
             if (_vertexBuffer == null || _vertexBufferSize < drawData.TotalVtxCount)
@@ -359,7 +408,7 @@ namespace ImGuiScene
             }
             _deviceContext.UnmapSubresource(_vertexConstantBuffer, 0);
 
-            var oldState = BackupRenderState();
+            var oldState = new StateBackup(_deviceContext);
 
             // Setup desired DX state
             SetupRenderState(drawData);
@@ -398,7 +447,8 @@ namespace ImGuiScene
                 vertexOffset += cmdList.VtxBuffer.Size;
             }
 
-            RestoreRenderState(ref oldState);
+            oldState.Dispose(); // restores the previous state
+            oldState = null;
         }
 
         public void CreateFontsTexture()

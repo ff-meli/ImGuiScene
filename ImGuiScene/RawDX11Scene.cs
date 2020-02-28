@@ -100,17 +100,34 @@ namespace ImGuiScene
             this.deviceContext.OutputMerger.SetRenderTargets(this.rtv);
 
             this.imguiRenderer.NewFrame();
-            // could (should?) grab size every frame, or ideally handle resize somehow
-            // but as long as we pretend we don't resize, this should be fine
             this.imguiInput.NewFrame(targetWidth, targetHeight);
 
             ImGui.NewFrame();
-                OnBuildUI?.Invoke();
+            OnBuildUI?.Invoke();
             ImGui.Render();
 
             this.imguiRenderer.RenderDrawData(ImGui.GetDrawData());
 
             this.deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
+        }
+
+        public void OnPreResize()
+        {
+            this.deviceContext.OutputMerger.SetRenderTargets((RenderTargetView)null);
+
+            this.rtv?.Dispose();
+            this.rtv = null;
+        }
+
+        public void OnPostResize(int newWidth, int newHeight)
+        {
+            using (var backbuffer = this.swapChain.GetBackBuffer<Texture2D>(0))
+            {
+                this.rtv = new RenderTargetView(this.device, backbuffer);
+            }
+
+            this.targetWidth = newWidth;
+            this.targetHeight = newHeight;
         }
 
         public bool IsImGuiCursor(IntPtr hCursor)
@@ -140,7 +157,7 @@ namespace ImGuiScene
 
         private unsafe TextureWrap LoadImage_Internal(StbiImage image)
         {
-            fixed (void *pixelData = image.Data)
+            fixed (void* pixelData = image.Data)
             {
                 return CreateTexture(pixelData, image.Width, image.Height, image.NumChannels);
             }
