@@ -125,6 +125,24 @@ namespace ImGuiScene
             {
                 UpdateMouseCursor();
             }
+
+            // From ImGui's FAQ:
+            // Note: Text input widget releases focus on "Return KeyDown", so the subsequent "Return KeyUp" event
+            // that your application receive will typically have io.WantCaptureKeyboard == false. Depending on your
+            // application logic it may or not be inconvenient.
+            //
+            // With how the local wndproc works, this causes the key up event to be missed when exiting ImGui text entry
+            // (eg, from hitting enter or escape.  There may be other ways as well)
+            // This then causes the key to appear 'stuck' down, which breaks subsequent attempts to use the input field.
+            // This is something of a brute force fix that basically makes key up events irrelevant
+            // Holding a key will send repeated key down events and (re)set these where appropriate, so this should be ok.
+            if (!io.WantCaptureKeyboard)
+            {
+                for (int i = 0; i < io.KeysDown.Count; i++)
+                {
+                    io.KeysDown[i] = false;
+                }
+            }
         }
 
         public void SetIniPath(string iniPath)
