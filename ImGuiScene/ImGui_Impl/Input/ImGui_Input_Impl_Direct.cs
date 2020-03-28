@@ -136,7 +136,7 @@ namespace ImGuiScene
             // This then causes the key to appear 'stuck' down, which breaks subsequent attempts to use the input field.
             // This is something of a brute force fix that basically makes key up events irrelevant
             // Holding a key will send repeated key down events and (re)set these where appropriate, so this should be ok.
-            if (!io.WantCaptureKeyboard)
+            if (!io.WantTextInput)
             {
                 for (int i = 0; i < io.KeysDown.Count; i++)
                 {
@@ -211,7 +211,7 @@ namespace ImGuiScene
 
         private long WndProcDetour(IntPtr hWnd, uint msg, ulong wParam, long lParam)
         {
-            if (hWnd == _hWnd && ImGui.GetCurrentContext() != IntPtr.Zero && (ImGui.GetIO().WantCaptureMouse || ImGui.GetIO().WantCaptureKeyboard))
+            if (hWnd == _hWnd && ImGui.GetCurrentContext() != IntPtr.Zero && (ImGui.GetIO().WantCaptureMouse || ImGui.GetIO().WantTextInput))
             {
                 var io = ImGui.GetIO();
                 var wmsg = (WindowsMessage)msg;
@@ -306,7 +306,7 @@ namespace ImGuiScene
 
                     case WindowsMessage.WM_KEYDOWN:
                     case WindowsMessage.WM_SYSKEYDOWN:
-                        if (io.WantCaptureKeyboard)
+                        if (io.WantTextInput)
                         {
                             if (wParam < 256)
                             {
@@ -318,7 +318,7 @@ namespace ImGuiScene
 
                     case WindowsMessage.WM_KEYUP:
                     case WindowsMessage.WM_SYSKEYUP:
-                        if (io.WantCaptureKeyboard)
+                        if (io.WantTextInput)
                         {
                             if (wParam < 256)
                             {
@@ -329,7 +329,7 @@ namespace ImGuiScene
                         break;
 
                     case WindowsMessage.WM_CHAR:
-                        if (io.WantCaptureKeyboard)
+                        if (io.WantTextInput)
                         {
                             io.AddInputCharacter((uint)wParam);
                             return 0;

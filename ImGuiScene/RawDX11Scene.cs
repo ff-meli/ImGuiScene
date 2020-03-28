@@ -26,11 +26,16 @@ namespace ImGuiScene
         private ImGui_Input_Impl_Direct imguiInput;
 
         public delegate void BuildUIDelegate();
+        public delegate void NewInputFrameDelegate();
+        public delegate void NewRenderFrameDelegate();
 
         /// <summary>
         /// User methods invoked every ImGui frame to construct custom UIs.
         /// </summary>
         public BuildUIDelegate OnBuildUI;
+
+        public NewInputFrameDelegate OnNewInputFrame;
+        public NewRenderFrameDelegate OnNewRenderFrame;
 
         private string imguiIniPath = null;
         public string ImGuiIniPath
@@ -100,7 +105,9 @@ namespace ImGuiScene
             this.deviceContext.OutputMerger.SetRenderTargets(this.rtv);
 
             this.imguiRenderer.NewFrame();
+            this.OnNewRenderFrame?.Invoke();
             this.imguiInput.NewFrame(targetWidth, targetHeight);
+            this.OnNewInputFrame?.Invoke();
 
             ImGui.NewFrame();
             OnBuildUI?.Invoke();
