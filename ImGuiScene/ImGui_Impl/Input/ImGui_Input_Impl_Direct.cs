@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -124,6 +124,10 @@ namespace ImGuiScene
             if (io.WantCaptureMouse || io.MouseDrawCursor)
             {
                 UpdateMouseCursor();
+
+                Win32.CallWindowProc(_oldWndProcPtr, this._hWnd, (uint)WindowsMessage.WM_LBUTTONUP, 0, 0);
+                Win32.CallWindowProc(_oldWndProcPtr, this._hWnd, (uint)WindowsMessage.WM_RBUTTONUP, 0, 0);
+                Win32.CallWindowProc(_oldWndProcPtr, this._hWnd, (uint)WindowsMessage.WM_MBUTTONUP, 0, 0);
             }
 
             // From ImGui's FAQ:
@@ -142,6 +146,9 @@ namespace ImGuiScene
                 {
                     io.KeysDown[i] = false;
                 }
+            } else {
+                for (ulong i = 0; i < 256; i++)
+                    Win32.CallWindowProc(_oldWndProcPtr, this._hWnd, (uint) WindowsMessage.WM_KEYUP, i, 0);
             }
         }
 
