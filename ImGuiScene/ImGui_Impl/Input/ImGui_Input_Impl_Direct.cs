@@ -147,8 +147,13 @@ namespace ImGuiScene
                     io.KeysDown[i] = false;
                 }
             } else {
-                for (ulong i = 0; i < 256; i++)
-                    Win32.CallWindowProc(_oldWndProcPtr, this._hWnd, (uint) WindowsMessage.WM_KEYUP, i, 0);
+                for (ulong i = 0; i < 256; i++) {
+                    // PrintScreen does not need to be handled this way
+                    if (i == (ulong) VirtualKey.Snapshot)
+                        continue;
+
+                    Win32.CallWindowProc(_oldWndProcPtr, this._hWnd, (uint)WindowsMessage.WM_KEYUP, i, 0);
+                }
             }
         }
 
