@@ -162,6 +162,21 @@ namespace ImGuiScene
             }
         }
 
+        public unsafe TextureWrap LoadImageRaw(byte[] imageData, int width, int height, int numChannels = 4)
+        {
+            // StbiSharp doesn't expose a constructor, even just to wrap existing data, which means
+            // short of something awful like below, or creating another wrapper layer, we can't avoid
+            // adding divergent code paths into CreateTexture
+            //var mock = new { Width = width, Height = height, NumChannels = numChannels, Data = imageData };
+            //var image = Unsafe.As<StbiImage>(mock);
+            //return LoadImage_Internal(image);
+
+            fixed (void* pixelData = imageData)
+            {
+                return CreateTexture(pixelData, width, height, numChannels);
+            }
+        }
+
         private unsafe TextureWrap LoadImage_Internal(StbiImage image)
         {
             fixed (void* pixelData = image.Data)
@@ -180,7 +195,7 @@ namespace ImGuiScene
                 Height = height,
                 MipLevels = 1,
                 ArraySize = 1,
-                Format = Format.R8G8B8A8_UNorm,    // TODO - support other formats?
+                Format = Format.R8G8B8A8_UNorm,
                 SampleDescription = new SampleDescription(1, 0),
                 Usage = ResourceUsage.Immutable,
                 BindFlags = BindFlags.ShaderResource,
