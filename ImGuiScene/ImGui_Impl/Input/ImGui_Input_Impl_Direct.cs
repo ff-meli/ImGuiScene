@@ -143,6 +143,18 @@ namespace ImGuiScene
                     io.KeysDown[i] = false;
                 }
             }
+
+            // Similar issue seen with overlapping mouse clicks
+            // eg, right click and hold on imgui window, drag off, left click and hold
+            //   release right click, release left click -> right click was 'stuck' and imgui
+            //   would become unresponsive
+            if (!io.WantCaptureMouse)
+            {
+                for (int i = 0; i < io.MouseDown.Count; i++)
+                {
+                    io.MouseDown[i] = false;
+                }
+            }
         }
 
         public void SetIniPath(string iniPath)
