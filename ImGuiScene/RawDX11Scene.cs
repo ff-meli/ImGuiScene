@@ -137,6 +137,13 @@ namespace ImGuiScene
             this.targetHeight = newHeight;
         }
 
+        // It is pretty much required that this is called from a handler attached
+        // to OnNewRenderFrame
+        public void InvalidateFonts()
+        {
+            this.imguiRenderer.RebuildFontTexture();
+        }
+
         public bool IsImGuiCursor(IntPtr hCursor)
         {
             return this.imguiInput.IsImGuiCursor(hCursor);

@@ -604,6 +604,16 @@ namespace ImGuiScene
             return true;
         }
 
+        // Added to support dynamic rebuilding of the font texture
+        // for adding fonts after initialization time
+        public void RebuildFontTexture()
+        {
+            _fontSampler?.Dispose();
+            _fontResourceView?.Dispose();
+
+            CreateFontsTexture();
+        }
+
         public void InvalidateDeviceObjects()
         {
             if (_device == null)

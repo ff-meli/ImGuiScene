@@ -243,6 +243,24 @@ namespace ImGuiScene
             return ret;
         }
 
+        // TODO: cleanup - added to match RawDX11Scene
+        public unsafe TextureWrap LoadImageRaw(byte[] imageData, int width, int height, int numChannels = 4)
+        {
+            TextureWrap ret = null;
+
+            fixed (void* pixelData = imageData)
+            {
+                var texture = Renderer.CreateTexture(pixelData, width, height, numChannels);
+                if (texture != null)
+                {
+                    _allocatedResources.Add(texture);
+                    ret = texture;
+                }
+            }
+
+            return ret;
+        }
+
         /// <summary>
         /// Performs a single-frame update of ImGui and renders it to the window.
         /// This method does not check any quit conditions.
